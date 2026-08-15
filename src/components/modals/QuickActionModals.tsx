@@ -388,7 +388,7 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Note Ricezione / DDT</label>
                 <input
                   type="text"
-                  placeholder="Es. DDT n. 45892 del vettore DHL, controllato conforme"
+                  placeholder="Es. DDT n. 45892 del vettore Poste Italiane, controllato conforme"
                   value={recNotes}
                   onChange={e => setRecNotes(e.target.value)}
                   className="w-full text-sm rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
