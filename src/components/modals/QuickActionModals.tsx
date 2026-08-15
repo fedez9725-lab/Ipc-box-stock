@@ -11,11 +11,14 @@ import {
   Info,
   Truck,
   Building,
+  Trash2,
+  RefreshCw,
+  AlertOctagon,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 
 interface ModalsProps {
-  currentModal: 'reception' | 'usage' | 'damage' | 'recovery' | 'adjust' | null;
+  currentModal: 'reception' | 'usage' | 'damage' | 'recovery' | 'adjust' | 'zero' | null;
   closeModal: () => void;
 }
 
@@ -32,10 +35,12 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
     recordDamage,
     recordRecovery,
     adjustStock,
+    resetAllData,
+    zeroAllData,
   } = useStock();
 
   // Reception Form State
-  const [recOrder, setRecOrder] = useState<string>('');
+  const [recLinea, setRecLinea] = useState<string>('');
   const [recBollaQty, setRecBollaQty] = useState<number>(0);
   const [recIntegri, setRecIntegri] = useState<number>(0);
   const [recDanneggiati, setRecDanneggiati] = useState<number>(0);
@@ -43,12 +48,10 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
   const [recCoperchiRotti, setRecCoperchiRotti] = useState<number>(0);
   const [recBasiMancanti, setRecBasiMancanti] = useState<number>(0);
   const [recCoperchiMancanti, setRecCoperchiMancanti] = useState<number>(0);
-  const [recZona, setRecZona] = useState<string>(settings.zoneDisponibili[0] || '');
+  const [recZona, setRecZona] = useState<string>(settings.zoneDisponibili[0] || 'Magazzino');
   const [recNotes, setRecNotes] = useState<string>('');
 
-  // Usage Form State
-  const [useWoId, setUseWoId] = useState<string>('');
-  const [useCode, setUseCode] = useState<string>('');
+  // Usage Form State - Only Qty & Notes
   const [useQty, setUseQty] = useState<number>(7);
   const [useNotes, setUseNotes] = useState<string>('');
 
@@ -78,35 +81,6 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
 
   if (!currentModal) return null;
 
-  // Handles Order Auto-fill on Selection
-  const handleSelectOrder = (orderId: string) => {
-    setRecOrder(orderId);
-    if (orderId) {
-      const ord = orders.find(o => o.id === orderId);
-      if (ord) {
-        const remaining = ord.quantitaDaRicevere > 0 ? ord.quantitaDaRicevere : ord.quantitaOrdinata;
-        setRecBollaQty(remaining);
-        setRecIntegri(remaining);
-        setRecDanneggiati(0);
-        setRecBasiRotte(0);
-        setRecCoperchiRotti(0);
-      }
-    }
-  };
-
-  // Handles WorkOrder Auto-fill on Selection
-  const handleSelectWorkOrder = (woId: string) => {
-    setUseWoId(woId);
-    if (woId) {
-      const wo = workOrders.find(w => w.id === woId);
-      if (wo) {
-        setUseCode(wo.codice);
-        const needed = Math.max(0, wo.quantitaRichiesta - wo.quantitaAssegnata);
-        setUseQty(Math.min(needed, metrics.boxUtilizzabili));
-      }
-    }
-  };
-
   // 1. Submit Reception
   const handleReceptionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,7 +89,7 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
       return;
     }
     const res = recordReception({
-      ordineId: recOrder || undefined,
+      lineaRiferimento: recLinea.trim() || undefined,
       quantitaDichiarata: Number(recBollaQty),
       boxIntegri: Number(recIntegri),
       boxDanneggiati: Number(recDanneggiati),
@@ -123,7 +97,7 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
       coperchiRotti: Number(recCoperchiRotti),
       basiMancanti: Number(recBasiMancanti),
       coperchiMancanti: Number(recCoperchiMancanti),
-      zona: recZona,
+      zona: recZona || 'Magazzino',
       note: recNotes,
     });
     if (res.success) {
@@ -131,7 +105,7 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
     }
   };
 
-  // 2. Submit Usage
+  // 2. Submit Usage (Prelevati + Note)
   const handleUsageSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (useQty <= 0) {
@@ -147,8 +121,7 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
     }
     const res = recordUsage({
       quantita: Number(useQty),
-      lavorazioneCodice: useCode || 'LAV-GENERICA',
-      lavorazioneId: useWoId || undefined,
+      lavorazioneCodice: 'Prelievo Operativo',
       note: useNotes,
     });
     if (res.success) {
@@ -221,20 +194,22 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
             {currentModal === 'damage' && <AlertTriangle className="w-5 h-5 text-rose-400" />}
             {currentModal === 'recovery' && <RotateCcw className="w-5 h-5 text-emerald-400" />}
             {currentModal === 'adjust' && <Sliders className="w-5 h-5 text-purple-400" />}
+            {currentModal === 'zero' && <Trash2 className="w-5 h-5 text-rose-400" />}
             <div>
               <h3 className="font-bold text-base tracking-tight">
                 {currentModal === 'reception' && 'Ricezione Materiale & Nuova Fornitura'}
-                {currentModal === 'usage' && 'Registra Utilizzo IPC BOX (Scarico Linea)'}
+                {currentModal === 'usage' && 'Registra Prelievo / Scarico BOX'}
                 {currentModal === 'damage' && 'Segnalazione Danno / Componente Rotto'}
                 {currentModal === 'recovery' && 'Recupero e Riparazione Componenti'}
                 {currentModal === 'adjust' && 'Rettifica Inventariale Straordinaria'}
+                {currentModal === 'zero' && 'Azzeramento Dati Magazzino'}
               </h3>
               <p className="text-xs text-slate-400">Operatore attivo: {activeOperator}</p>
             </div>
           </div>
           <button
             onClick={closeModal}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -256,23 +231,15 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Ordine di Riferimento (Opzionale)
+                  Linea di Riferimento
                 </label>
-                <select
-                  id="reception-order-select"
-                  value={recOrder}
-                  onChange={e => handleSelectOrder(e.target.value)}
-                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                >
-                  <option value="">-- Ricezione Senza Ordine (Diretta) --</option>
-                  {orders
-                    .filter(o => o.stato !== 'COMPLETATO')
-                    .map(o => (
-                      <option key={o.id} value={o.id}>
-                        {o.codiceOrdine} - {o.fornitore} (Da ric: {o.quantitaDaRicevere})
-                      </option>
-                    ))}
-                </select>
+                <input
+                  type="text"
+                  placeholder="Es. Linea 1, Linea 2, Imballaggio, Fornitore..."
+                  value={recLinea}
+                  onChange={e => setRecLinea(e.target.value)}
+                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
               </div>
 
               <div>
@@ -434,13 +401,13 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
               <button
                 type="button"
                 onClick={closeModal}
-                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               >
                 Annulla
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
+                className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer"
               >
                 Conferma Ricezione & Aggiorna Stock
               </button>
@@ -448,78 +415,49 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
           </form>
         )}
 
-        {/* 2. USAGE MODAL */}
+        {/* 2. USAGE MODAL - Simplified (Only Quantità Box Prelevati + Note) */}
         {currentModal === 'usage' && (
-          <form onSubmit={handleUsageSubmit} className="p-6 space-y-4">
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs flex items-center justify-between text-amber-900">
+          <form onSubmit={handleUsageSubmit} className="p-6 space-y-5">
+            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs flex items-center justify-between text-amber-900">
               <span>
-                Disponibilità attuale utilizzabile: <strong>{metrics.boxUtilizzabili} IPC BOX</strong>
+                Disponibilità attuale: <strong>{metrics.boxUtilizzabili} BOX utilizzabili</strong>
               </span>
               <span>
-                Pile da 7 disponibili: <strong>{Math.floor(metrics.boxUtilizzabili / 7)}</strong>
+                Pile da 7 pronte: <strong>{Math.floor(metrics.boxUtilizzabili / 7)}</strong>
               </span>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                Lavorazione / Commessa Associata
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                Quantità BOX da Prelevare <span className="text-red-500">*</span>
               </label>
-              <select
-                value={useWoId}
-                onChange={e => handleSelectWorkOrder(e.target.value)}
-                className="w-full text-sm rounded-lg border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-              >
-                <option value="">-- Lavorazione Libera / Scarico Diretto --</option>
-                {workOrders
-                  .filter(w => w.stato !== 'COMPLETATA')
-                  .map(w => (
-                    <option key={w.id} value={w.id}>
-                      {w.codice} - {w.descrizione} (Richiesti: {w.quantitaRichiesta}, Assegnati: {w.quantitaAssegnata})
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Codice Lavorazione</label>
-                <input
-                  type="text"
-                  placeholder="Es. LAV-INT-2026-120"
-                  value={useCode}
-                  onChange={e => setUseCode(e.target.value)}
-                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Quantità BOX da Prelevare <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max={metrics.boxUtilizzabili}
-                  value={useQty}
-                  onChange={e => setUseQty(Math.max(1, parseInt(e.target.value) || 0))}
-                  className="w-full text-sm font-bold text-amber-900 rounded-lg border border-amber-300 p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                />
-                <span className="text-[11px] text-slate-500">
-                  {useQty > 0
-                    ? `Corrisponde a ${Math.floor(useQty / 7)} pile da 7${useQty % 7 > 0 ? ` + ${useQty % 7} box` : ''}`
-                    : ''}
-                </span>
-              </div>
+              <input
+                type="number"
+                min="1"
+                max={metrics.boxUtilizzabili}
+                value={useQty}
+                onChange={e => setUseQty(Math.max(1, parseInt(e.target.value) || 0))}
+                className="w-full text-lg font-bold text-slate-900 rounded-xl border border-slate-300 p-3.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none bg-slate-50 focus:bg-white"
+                placeholder="Inserisci numero box..."
+                autoFocus
+              />
+              <p className="text-xs text-slate-500 mt-1.5">
+                {useQty > 0
+                  ? `Corrisponde a ${Math.floor(useQty / 7)} pile complete da 7${useQty % 7 > 0 ? ` + ${useQty % 7} box singoli` : ''}`
+                  : 'Inserisci il quantitativo da prelevare per la linea'}
+              </p>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Note Operative</label>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                Note
+              </label>
               <textarea
-                rows={2}
-                placeholder="Destinazione pallet, linea di produzione o cliente finale..."
+                rows={3}
+                placeholder="Note operative (es. Linea di produzione, turno, pallet, destinazione...)"
                 value={useNotes}
                 onChange={e => setUseNotes(e.target.value)}
-                className="w-full text-sm rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                className="w-full text-sm rounded-xl border border-slate-300 p-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none"
               />
             </div>
 
@@ -527,15 +465,15 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
               <button
                 type="button"
                 onClick={closeModal}
-                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
               >
                 Annulla
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 text-sm font-semibold text-white bg-slate-900 hover:bg-black rounded-lg shadow-sm transition-colors"
+                className="px-6 py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-black rounded-xl shadow-sm transition-colors cursor-pointer"
               >
-                Conferma Prelievo & Scarica Stock
+                Conferma Prelievo & Scarica Box
               </button>
             </div>
           </form>
@@ -553,7 +491,7 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
               <button
                 type="button"
                 onClick={() => setDamType('BASE')}
-                className={`p-3 rounded-xl border text-center transition-all ${
+                className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${
                   damType === 'BASE'
                     ? 'border-rose-500 bg-rose-50 text-rose-900 font-bold ring-2 ring-rose-500/20'
                     : 'border-slate-200 hover:bg-slate-50 text-slate-700'
@@ -566,7 +504,7 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
               <button
                 type="button"
                 onClick={() => setDamType('COPERCHIO')}
-                className={`p-3 rounded-xl border text-center transition-all ${
+                className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${
                   damType === 'COPERCHIO'
                     ? 'border-rose-500 bg-rose-50 text-rose-900 font-bold ring-2 ring-rose-500/20'
                     : 'border-slate-200 hover:bg-slate-50 text-slate-700'
@@ -579,7 +517,7 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
               <button
                 type="button"
                 onClick={() => setDamType('BOX_COMPLETO')}
-                className={`p-3 rounded-xl border text-center transition-all ${
+                className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${
                   damType === 'BOX_COMPLETO'
                     ? 'border-rose-500 bg-rose-50 text-rose-900 font-bold ring-2 ring-rose-500/20'
                     : 'border-slate-200 hover:bg-slate-50 text-slate-700'
@@ -626,7 +564,7 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Pila di Origine (Opzionale)</label>
                 <input
                   type="text"
-                  placeholder="Es. PILA-A02 o Corsia 3"
+                  placeholder="Es. PILA-M02 o Capannone"
                   value={damPila}
                   onChange={e => setDamPila(e.target.value)}
                   className="w-full text-sm rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-rose-500 focus:outline-none"
@@ -649,13 +587,13 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
               <button
                 type="button"
                 onClick={closeModal}
-                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               >
                 Annulla
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm transition-colors"
+                className="px-5 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm transition-colors cursor-pointer"
               >
                 Registra Danno
               </button>
@@ -738,13 +676,13 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
               <button
                 type="button"
                 onClick={closeModal}
-                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               >
                 Annulla
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors"
+                className="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors cursor-pointer"
               >
                 Conferma Recupero
               </button>
@@ -820,18 +758,93 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
               <button
                 type="button"
                 onClick={closeModal}
-                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               >
                 Annulla
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-sm transition-colors"
+                className="px-5 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-sm transition-colors cursor-pointer"
               >
                 Salva Rettifica & Rigenera Pile
               </button>
             </div>
           </form>
+        )}
+
+        {/* 6. ZERO ALL / RESET MODAL */}
+        {currentModal === 'zero' && (
+          <div className="p-6 space-y-6">
+            <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3.5">
+              <AlertOctagon className="w-6 h-6 text-rose-600 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-bold text-rose-900">Operazione di Azzeramento</h4>
+                <p className="text-xs text-rose-700 mt-1 leading-relaxed">
+                  Scegli se azzerare tutti i conteggi a zero (0 box, 0 basi, 0 coperchi, 0 pile) per iniziare una nuova gestione pulita, oppure se ripristinare il set di dati dimostrativo iniziale.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Option A: Zero All */}
+              <div className="p-5 rounded-2xl border-2 border-rose-200 bg-white hover:border-rose-400 hover:bg-rose-50/40 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold mb-3">
+                    <Trash2 className="w-5 h-5" />
+                  </div>
+                  <h5 className="font-bold text-slate-900 text-sm">Azzera Tutto a 0</h5>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Porta tutte le quantità di magazzino a 0 (basi integre, coperchi integri, rotti, pile svuotate).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    zeroAllData();
+                    closeModal();
+                  }}
+                  className="mt-4 w-full py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Conferma Azzeramento a 0
+                </button>
+              </div>
+
+              {/* Option B: Reset Demo Data */}
+              <div className="p-5 rounded-2xl border-2 border-slate-200 bg-white hover:border-slate-400 hover:bg-slate-50/50 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold mb-3">
+                    <RefreshCw className="w-5 h-5" />
+                  </div>
+                  <h5 className="font-bold text-slate-900 text-sm">Ripristina Dati Iniziali Demo</h5>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Ripristina i dati di prova predefiniti (58 basi, 54 coperchi, pile in Magazzino e Capannone).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetAllData();
+                    closeModal();
+                  }}
+                  className="mt-4 w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Ripristina Demo
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-200 flex justify-end">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              >
+                Annulla
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

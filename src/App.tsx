@@ -17,10 +17,10 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<TabType>('dashboard');
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
   const [activeModal, setActiveModal] = useState<
-    'reception' | 'usage' | 'damage' | 'recovery' | 'adjust' | null
+    'reception' | 'usage' | 'damage' | 'recovery' | 'adjust' | 'zero' | null
   >(null);
 
-  const openModal = (modal: 'reception' | 'usage' | 'damage' | 'recovery' | 'adjust') => {
+  const openModal = (modal: 'reception' | 'usage' | 'damage' | 'recovery' | 'adjust' | 'zero') => {
     setActiveModal(modal);
   };
 

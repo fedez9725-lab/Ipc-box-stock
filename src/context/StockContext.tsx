@@ -35,6 +35,7 @@ interface StockContextType {
   // Actions
   recordReception: (data: {
     ordineId?: string;
+    lineaRiferimento?: string;
     quantitaDichiarata: number;
     boxIntegri: number;
     boxDanneggiati: number;
@@ -97,6 +98,7 @@ interface StockContextType {
   rebuildPilesManually: () => void;
   updatePilaZone: (pilaId: string, nuovaZona: string) => void;
   resetAllData: () => void;
+  zeroAllData: () => void;
 }
 
 const StockContext = createContext<StockContextType | undefined>(undefined);
@@ -137,7 +139,15 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}settings`);
-    return saved ? JSON.parse(saved) : initialSettings;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Ensure default zones are Magazzino and Capannone
+      if (!parsed.zoneDisponibili || parsed.zoneDisponibili.length > 2 || !parsed.zoneDisponibili.includes('Magazzino')) {
+        parsed.zoneDisponibili = ['Magazzino', 'Capannone'];
+      }
+      return parsed;
+    }
+    return initialSettings;
   });
 
   const [activeOperator, setActiveOperator] = useState<string>(() => {
@@ -238,7 +248,9 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const remainder = usableCount % maxPerPila;
     const totalPilesCount = totalFullPiles + (remainder > 0 ? 1 : 0);
 
-    const zones = settings.zoneDisponibili;
+    const zones = settings.zoneDisponibili && settings.zoneDisponibili.length > 0
+      ? settings.zoneDisponibili
+      : ['Magazzino', 'Capannone'];
     const newPiles: Pila[] = [];
 
     let globalBoxIndex = 1;
@@ -246,10 +258,11 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     for (let pIdx = 0; pIdx < totalPilesCount; pIdx++) {
       const isLast = pIdx === totalPilesCount - 1;
       const countInThisPila = isLast && remainder > 0 ? remainder : maxPerPila;
-      const pilaCode = `PILA-${String.fromCharCode(65 + Math.floor(pIdx / 4))}${String((pIdx % 4) + 1).padStart(2, '0')}`;
+      const zoneName = zones[pIdx % zones.length];
+      const zoneLetter = zoneName.startsWith('Cap') ? 'C' : 'M';
+      const pilaCode = `PILA-${zoneLetter}${String(pIdx + 1).padStart(2, '0')}`;
       
-      const zoneIndex = Math.min(Math.floor(pIdx / 3), zones.length - 1);
-      const zona = zones[zoneIndex] || 'Area A - Stoccaggio Rapido';
+      const zona = zoneName;
 
       const pileBoxes: StackBoxItem[] = [];
       for (let b = 1; b <= countInThisPila; b++) {
@@ -319,6 +332,7 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // 1. Record Reception
   const recordReception = (data: {
     ordineId?: string;
+    lineaRiferimento?: string;
     quantitaDichiarata: number;
     boxIntegri: number;
     boxDanneggiati: number;
@@ -338,6 +352,7 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const newReception: ReceptionRecord = {
       id: receptionId,
       ordineId: data.ordineId,
+      lineaRiferimento: data.lineaRiferimento,
       timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
       operatore: op,
       quantitaDichiarataBolla: data.quantitaDichiarata,
@@ -350,7 +365,7 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       quantitaEffettivamenteUtilizzabile: effUtilizzabili,
       discrepanza,
       note: data.note,
-      assegnazioneZona: data.zona || 'Zona Ricezione & Buffer',
+      assegnazioneZona: data.zona || 'Magazzino',
     };
 
     // Update Stock
@@ -394,6 +409,12 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     // Add Movement
+    const descMotivo = data.lineaRiferimento
+      ? `Ricezione fornitura - ${data.lineaRiferimento}`
+      : data.ordineId
+      ? `Ricezione per ordine ${data.ordineId}`
+      : 'Ricezione carico fornitura diretta';
+
     addMovement(
       'RICEZIONE',
       data.boxIntegri + data.boxDanneggiati,
@@ -401,16 +422,16 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       data.boxIntegri,
       data.basiRotte,
       data.coperchiRotti,
-      data.ordineId ? `Ricezione per ordine ${data.ordineId}` : 'Ricezione carico fornitura diretta',
+      descMotivo,
       data.note,
-      undefined,
+      data.lineaRiferimento,
       data.ordineId,
       op
     );
 
     return {
       success: true,
-      message: `Caricati con successo ${data.boxIntegri} IPC BOX integri utilizzabili.${
+      message: `Caricati con successo ${data.boxIntegri} IPC BOX integri utilizzabili in ${data.zona || 'Magazzino'}.${
         data.boxDanneggiati > 0 || data.basiRotte > 0 || data.coperchiRotti > 0
           ? ` Rilevati componenti non conformi: ${data.boxDanneggiati} box danneggiati, ${data.basiRotte} basi rotte, ${data.coperchiRotti} coperchi rotti.`
           : ''
@@ -830,6 +851,36 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSettings(initialSettings);
   };
 
+  const zeroAllData = () => {
+    const zeroStock: ComponentStock = {
+      basiIntegre: 0,
+      coperchiIntegri: 0,
+      basiRotte: 0,
+      coperchiRotti: 0,
+      basiMancanti: 0,
+      coperchiMancanti: 0,
+      boxDanneggiatiTotali: 0,
+    };
+    setStock(zeroStock);
+    setPiles([]);
+    setOrders([]);
+    setWorkOrders([]);
+    setDamageReports([]);
+    addMovement(
+      'RETTIFICA',
+      0,
+      -stock.basiIntegre,
+      -stock.coperchiIntegri,
+      -stock.basiRotte,
+      -stock.coperchiRotti,
+      'Azzeramento totale magazzino e registri operativi',
+      'Tutti i conteggi di stock, pile e ordini sono stati azzerati a 0 su richiesta operatore.',
+      undefined,
+      undefined,
+      activeOperator
+    );
+  };
+
   return (
     <StockContext.Provider
       value={{
@@ -857,6 +908,7 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         rebuildPilesManually,
         updatePilaZone,
         resetAllData,
+        zeroAllData,
       }}
     >
       {children}

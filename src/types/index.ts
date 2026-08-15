@@ -83,6 +83,7 @@ export interface StockMovement {
 export interface ReceptionRecord {
   id: string;
   ordineId?: string;
+  lineaRiferimento?: string;
   timestamp: string;
   operatore: string;
   quantitaDichiarataBolla: number;

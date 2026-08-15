@@ -17,7 +17,7 @@ import { useStock } from '../../context/StockContext';
 import { WorkOrder } from '../../types';
 
 interface WorkOrdersViewProps {
-  openModal: (modal: 'reception' | 'usage' | 'damage' | 'recovery' | 'adjust') => void;
+  openModal: (modal: 'reception' | 'usage' | 'damage' | 'recovery' | 'adjust' | 'zero') => void;
 }
 
 export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({ openModal }) => {

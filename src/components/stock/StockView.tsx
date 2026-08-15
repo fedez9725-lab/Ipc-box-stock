@@ -12,11 +12,12 @@ import {
   Info,
   Wrench,
   Plus,
+  Trash2,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 
 interface StockViewProps {
-  openModal: (modal: 'reception' | 'usage' | 'damage' | 'recovery' | 'adjust') => void;
+  openModal: (modal: 'reception' | 'usage' | 'damage' | 'recovery' | 'adjust' | 'zero') => void;
 }
 
 export const StockView: React.FC<StockViewProps> = ({ openModal }) => {
@@ -46,24 +47,32 @@ export const StockView: React.FC<StockViewProps> = ({ openModal }) => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => openModal('adjust')}
-              className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1.5 transition-colors"
+              className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Sliders className="w-3.5 h-3.5" />
-              Rettifica Inventario
+              Rettifica
             </button>
             <button
               onClick={() => openModal('damage')}
-              className="px-3.5 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg flex items-center gap-1.5 transition-colors"
+              className="px-3.5 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-              Registra Danno
+              Danno
             </button>
             <button
               onClick={() => openModal('recovery')}
-              className="px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-1.5 transition-colors shadow-xs"
+              className="px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Recupero / Ripristino
+              Recupero
+            </button>
+            <button
+              onClick={() => openModal('zero')}
+              className="px-3.5 py-2 text-xs font-semibold text-rose-700 bg-white border border-rose-300 hover:bg-rose-50 rounded-lg flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+              title="Azzera o svuota tutto lo stock"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+              Azzera Tutto
             </button>
           </div>
         </div>

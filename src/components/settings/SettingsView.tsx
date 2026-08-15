@@ -15,7 +15,7 @@ import {
 import { useStock } from '../../context/StockContext';
 
 export const SettingsView: React.FC = () => {
-  const { settings, updateSettings, resetAllData } = useStock();
+  const { settings, updateSettings, resetAllData, zeroAllData } = useStock();
 
   const [minStock, setMinStock] = useState<number>(settings.sogliaMinimaScorta);
   const [warnStock, setWarnStock] = useState<number>(settings.sogliaAttenzioneScorta);
@@ -333,11 +333,23 @@ export const SettingsView: React.FC = () => {
             <button
               type="button"
               onClick={() => {
+                if (window.confirm('Sei sicuro di voler azzerare tutti i dati di magazzino a 0 (svuotare tutte le quantità)?')) {
+                  zeroAllData();
+                }
+              }}
+              className="px-4 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg flex items-center gap-1.5 cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+              Azzera Tutto a 0
+            </button>
+            <button
+              type="button"
+              onClick={() => {
                 if (window.confirm('Sei sicuro di voler ripristinare i dati demo di esempio?')) {
                   resetAllData();
                 }
               }}
-              className="px-4 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg flex items-center gap-1.5"
+              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg flex items-center gap-1.5 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Ripristina Dati Iniziali Demo

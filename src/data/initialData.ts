@@ -16,12 +16,8 @@ export const initialSettings: AppSettings = {
   nomeHub: 'Hub Logistico Intermodale Milano Nord - IPC Terminal',
   codiceHub: 'HUB-MXP-04',
   zoneDisponibili: [
-    'Area A - Stoccaggio Rapido',
-    'Area B - Stoccaggio Principale',
-    'Area C - Zona Prelievo Lavorazioni',
-    'Zona Ricezione & Buffer',
-    'Zona Riparazioni & Recupero',
-    'Quarantena Danni',
+    'Magazzino',
+    'Capannone',
   ],
   operatori: [
     'Marco Rossi (Capoturno)',
@@ -46,12 +42,12 @@ export const initialComponentStock: ComponentStock = {
 export const initialPiles: Pila[] = [
   {
     id: 'pila-1',
-    codice: 'PILA-A01',
-    zona: 'Area A - Stoccaggio Rapido',
+    codice: 'PILA-M01',
+    zona: 'Magazzino',
     capienzaMax: 7,
     stato: 'OTTIMALE',
     dataAggiornamento: '2026-08-14 08:30',
-    note: 'Stoccaggio pronto per linea 1',
+    note: 'Stoccaggio pronto per linea',
     boxes: Array.from({ length: 7 }, (_, i) => ({
       id: `box-1-${i + 1}`,
       pilaId: 'pila-1',
@@ -64,8 +60,8 @@ export const initialPiles: Pila[] = [
   },
   {
     id: 'pila-2',
-    codice: 'PILA-A02',
-    zona: 'Area A - Stoccaggio Rapido',
+    codice: 'PILA-M02',
+    zona: 'Magazzino',
     capienzaMax: 7,
     stato: 'OTTIMALE',
     dataAggiornamento: '2026-08-14 08:30',
@@ -81,8 +77,8 @@ export const initialPiles: Pila[] = [
   },
   {
     id: 'pila-3',
-    codice: 'PILA-A03',
-    zona: 'Area A - Stoccaggio Rapido',
+    codice: 'PILA-M03',
+    zona: 'Magazzino',
     capienzaMax: 7,
     stato: 'OTTIMALE',
     dataAggiornamento: '2026-08-14 09:15',
@@ -98,8 +94,8 @@ export const initialPiles: Pila[] = [
   },
   {
     id: 'pila-4',
-    codice: 'PILA-B01',
-    zona: 'Area B - Stoccaggio Principale',
+    codice: 'PILA-M04',
+    zona: 'Magazzino',
     capienzaMax: 7,
     stato: 'OTTIMALE',
     dataAggiornamento: '2026-08-14 09:45',
@@ -115,8 +111,8 @@ export const initialPiles: Pila[] = [
   },
   {
     id: 'pila-5',
-    codice: 'PILA-B02',
-    zona: 'Area B - Stoccaggio Principale',
+    codice: 'PILA-C01',
+    zona: 'Capannone',
     capienzaMax: 7,
     stato: 'OTTIMALE',
     dataAggiornamento: '2026-08-14 10:00',
@@ -132,8 +128,8 @@ export const initialPiles: Pila[] = [
   },
   {
     id: 'pila-6',
-    codice: 'PILA-B03',
-    zona: 'Area B - Stoccaggio Principale',
+    codice: 'PILA-C02',
+    zona: 'Capannone',
     capienzaMax: 7,
     stato: 'OTTIMALE',
     dataAggiornamento: '2026-08-14 10:30',
@@ -149,8 +145,8 @@ export const initialPiles: Pila[] = [
   },
   {
     id: 'pila-7',
-    codice: 'PILA-B04',
-    zona: 'Area B - Stoccaggio Principale',
+    codice: 'PILA-C03',
+    zona: 'Capannone',
     capienzaMax: 7,
     stato: 'OTTIMALE',
     dataAggiornamento: '2026-08-14 11:00',
@@ -166,8 +162,8 @@ export const initialPiles: Pila[] = [
   },
   {
     id: 'pila-8',
-    codice: 'PILA-C01',
-    zona: 'Area C - Zona Prelievo Lavorazioni',
+    codice: 'PILA-C04',
+    zona: 'Capannone',
     capienzaMax: 7,
     stato: 'INCOMPLETA',
     dataAggiornamento: '2026-08-14 14:20',
@@ -185,7 +181,7 @@ export const initialPiles: Pila[] = [
   {
     id: 'pila-quarantena',
     codice: 'PILA-Q01',
-    zona: 'Quarantena Danni',
+    zona: 'Magazzino',
     capienzaMax: 7,
     stato: 'QUARANTENA',
     dataAggiornamento: '2026-08-14 15:00',
