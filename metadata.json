@@ -1,0 +1,6 @@
+{
+  "name": "Gestionale IPC BOX Logistics Hub",
+  "description": "Applicazione per la gestione operativa, stock, pile da 7, ordini, lavorazioni, danni e storico movimenti degli IPC BOX per la logistica internazionale.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

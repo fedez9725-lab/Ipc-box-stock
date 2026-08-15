@@ -1,0 +1,839 @@
+import React, { useState } from 'react';
+import {
+  X,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  AlertTriangle,
+  RotateCcw,
+  CheckCircle2,
+  Sliders,
+  Layers,
+  Info,
+  Truck,
+  Building,
+} from 'lucide-react';
+import { useStock } from '../../context/StockContext';
+
+interface ModalsProps {
+  currentModal: 'reception' | 'usage' | 'damage' | 'recovery' | 'adjust' | null;
+  closeModal: () => void;
+}
+
+export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeModal }) => {
+  const {
+    stock,
+    metrics,
+    orders,
+    workOrders,
+    settings,
+    activeOperator,
+    recordReception,
+    recordUsage,
+    recordDamage,
+    recordRecovery,
+    adjustStock,
+  } = useStock();
+
+  // Reception Form State
+  const [recOrder, setRecOrder] = useState<string>('');
+  const [recBollaQty, setRecBollaQty] = useState<number>(0);
+  const [recIntegri, setRecIntegri] = useState<number>(0);
+  const [recDanneggiati, setRecDanneggiati] = useState<number>(0);
+  const [recBasiRotte, setRecBasiRotte] = useState<number>(0);
+  const [recCoperchiRotti, setRecCoperchiRotti] = useState<number>(0);
+  const [recBasiMancanti, setRecBasiMancanti] = useState<number>(0);
+  const [recCoperchiMancanti, setRecCoperchiMancanti] = useState<number>(0);
+  const [recZona, setRecZona] = useState<string>(settings.zoneDisponibili[0] || '');
+  const [recNotes, setRecNotes] = useState<string>('');
+
+  // Usage Form State
+  const [useWoId, setUseWoId] = useState<string>('');
+  const [useCode, setUseCode] = useState<string>('');
+  const [useQty, setUseQty] = useState<number>(7);
+  const [useNotes, setUseNotes] = useState<string>('');
+
+  // Damage Form State
+  const [damType, setDamType] = useState<'BOX_COMPLETO' | 'BASE' | 'COPERCHIO'>('BASE');
+  const [damQty, setDamQty] = useState<number>(1);
+  const [damCause, setDamCause] = useState<
+    'CADUTA_CARRELLO' | 'SCHIACCIAMENTO' | 'USURA_LAVORAZIONE' | 'DIFETTO_FORNITURA' | 'GANCIO_ROTTO' | 'ALTRO'
+  >('CADUTA_CARRELLO');
+  const [damDesc, setDamDesc] = useState<string>('');
+  const [damPila, setDamPila] = useState<string>('');
+
+  // Recovery Form State
+  const [recovType, setRecovType] = useState<'BOX_COMPLETO' | 'BASE' | 'COPERCHIO'>('BASE');
+  const [recovQty, setRecovQty] = useState<number>(1);
+  const [recovNotes, setRecovNotes] = useState<string>('');
+
+  // Adjust Form State
+  const [adjBasiInt, setAdjBasiInt] = useState<number>(stock.basiIntegre);
+  const [adjCopInt, setAdjCopInt] = useState<number>(stock.coperchiIntegri);
+  const [adjBasiRot, setAdjBasiRot] = useState<number>(stock.basiRotte);
+  const [adjCopRot, setAdjCopRot] = useState<number>(stock.coperchiRotti);
+  const [adjMotivo, setAdjMotivo] = useState<string>('Conteggio fisico inventario periodico');
+
+  // Feedback message
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  if (!currentModal) return null;
+
+  // Handles Order Auto-fill on Selection
+  const handleSelectOrder = (orderId: string) => {
+    setRecOrder(orderId);
+    if (orderId) {
+      const ord = orders.find(o => o.id === orderId);
+      if (ord) {
+        const remaining = ord.quantitaDaRicevere > 0 ? ord.quantitaDaRicevere : ord.quantitaOrdinata;
+        setRecBollaQty(remaining);
+        setRecIntegri(remaining);
+        setRecDanneggiati(0);
+        setRecBasiRotte(0);
+        setRecCoperchiRotti(0);
+      }
+    }
+  };
+
+  // Handles WorkOrder Auto-fill on Selection
+  const handleSelectWorkOrder = (woId: string) => {
+    setUseWoId(woId);
+    if (woId) {
+      const wo = workOrders.find(w => w.id === woId);
+      if (wo) {
+        setUseCode(wo.codice);
+        const needed = Math.max(0, wo.quantitaRichiesta - wo.quantitaAssegnata);
+        setUseQty(Math.min(needed, metrics.boxUtilizzabili));
+      }
+    }
+  };
+
+  // 1. Submit Reception
+  const handleReceptionSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (recIntegri <= 0 && recDanneggiati <= 0 && recBasiRotte <= 0 && recCoperchiRotti <= 0) {
+      setNotification({ type: 'error', msg: 'Inserisci almeno un componente o box ricevuto.' });
+      return;
+    }
+    const res = recordReception({
+      ordineId: recOrder || undefined,
+      quantitaDichiarata: Number(recBollaQty),
+      boxIntegri: Number(recIntegri),
+      boxDanneggiati: Number(recDanneggiati),
+      basiRotte: Number(recBasiRotte),
+      coperchiRotti: Number(recCoperchiRotti),
+      basiMancanti: Number(recBasiMancanti),
+      coperchiMancanti: Number(recCoperchiMancanti),
+      zona: recZona,
+      note: recNotes,
+    });
+    if (res.success) {
+      closeModal();
+    }
+  };
+
+  // 2. Submit Usage
+  const handleUsageSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (useQty <= 0) {
+      setNotification({ type: 'error', msg: 'Inserisci una quantità valida maggiore di zero.' });
+      return;
+    }
+    if (useQty > metrics.boxUtilizzabili) {
+      setNotification({
+        type: 'error',
+        msg: `Quantità richiesta (${useQty}) superiore alla disponibilità utilizzabile (${metrics.boxUtilizzabili}).`,
+      });
+      return;
+    }
+    const res = recordUsage({
+      quantita: Number(useQty),
+      lavorazioneCodice: useCode || 'LAV-GENERICA',
+      lavorazioneId: useWoId || undefined,
+      note: useNotes,
+    });
+    if (res.success) {
+      closeModal();
+    } else {
+      setNotification({ type: 'error', msg: res.message });
+    }
+  };
+
+  // 3. Submit Damage
+  const handleDamageSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (damQty <= 0) {
+      setNotification({ type: 'error', msg: 'Inserisci una quantità valida.' });
+      return;
+    }
+    const res = recordDamage({
+      tipoElemento: damType,
+      quantita: Number(damQty),
+      causaDanno: damCause,
+      descrizione: damDesc || `Danno ${damType} per ${damCause}`,
+      pilaOrigine: damPila,
+    });
+    if (res.success) {
+      closeModal();
+    }
+  };
+
+  // 4. Submit Recovery
+  const handleRecoverySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (recovQty <= 0) {
+      setNotification({ type: 'error', msg: 'Inserisci una quantità valida.' });
+      return;
+    }
+    const res = recordRecovery({
+      tipoElemento: recovType,
+      quantita: Number(recovQty),
+      note: recovNotes || `Recupero ${recovType}`,
+    });
+    if (res.success) {
+      closeModal();
+    }
+  };
+
+  // 5. Submit Adjustment
+  const handleAdjustSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    adjustStock({
+      basiIntegre: Number(adjBasiInt),
+      coperchiIntegri: Number(adjCopInt),
+      basiRotte: Number(adjBasiRot),
+      coperchiRotti: Number(adjCopRot),
+      motivo: adjMotivo,
+    });
+    closeModal();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div
+        id="quick-action-modal-container"
+        className="relative bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+      >
+        {/* Header */}
+        <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {currentModal === 'reception' && <ArrowDownToLine className="w-5 h-5 text-blue-400" />}
+            {currentModal === 'usage' && <ArrowUpFromLine className="w-5 h-5 text-amber-400" />}
+            {currentModal === 'damage' && <AlertTriangle className="w-5 h-5 text-rose-400" />}
+            {currentModal === 'recovery' && <RotateCcw className="w-5 h-5 text-emerald-400" />}
+            {currentModal === 'adjust' && <Sliders className="w-5 h-5 text-purple-400" />}
+            <div>
+              <h3 className="font-bold text-base tracking-tight">
+                {currentModal === 'reception' && 'Ricezione Materiale & Nuova Fornitura'}
+                {currentModal === 'usage' && 'Registra Utilizzo IPC BOX (Scarico Linea)'}
+                {currentModal === 'damage' && 'Segnalazione Danno / Componente Rotto'}
+                {currentModal === 'recovery' && 'Recupero e Riparazione Componenti'}
+                {currentModal === 'adjust' && 'Rettifica Inventariale Straordinaria'}
+              </h3>
+              <p className="text-xs text-slate-400">Operatore attivo: {activeOperator}</p>
+            </div>
+          </div>
+          <button
+            onClick={closeModal}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {notification && (
+          <div
+            className={`p-3 text-xs font-medium ${
+              notification.type === 'error' ? 'bg-rose-50 text-rose-800 border-b border-rose-200' : 'bg-emerald-50 text-emerald-800'
+            }`}
+          >
+            {notification.msg}
+          </div>
+        )}
+
+        {/* 1. RECEPTION MODAL */}
+        {currentModal === 'reception' && (
+          <form onSubmit={handleReceptionSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Ordine di Riferimento (Opzionale)
+                </label>
+                <select
+                  id="reception-order-select"
+                  value={recOrder}
+                  onChange={e => handleSelectOrder(e.target.value)}
+                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  <option value="">-- Ricezione Senza Ordine (Diretta) --</option>
+                  {orders
+                    .filter(o => o.stato !== 'COMPLETATO')
+                    .map(o => (
+                      <option key={o.id} value={o.id}>
+                        {o.codiceOrdine} - {o.fornitore} (Da ric: {o.quantitaDaRicevere})
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Quantità Dichiarata in Bolla / DDT
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={recBollaQty}
+                  onChange={e => setRecBollaQty(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Quality Inspection Breakdown */}
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Controllo Qualità & Integrità al Ricevimento
+                </span>
+                <span className="text-[11px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
+                  Effettivamente Utilizzabili: {recIntegri} BOX
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <label className="block font-medium text-emerald-800 mb-1">
+                    BOX Integri Completi <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={recIntegri}
+                    onChange={e => setRecIntegri(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-full text-sm font-bold text-emerald-700 bg-white border border-emerald-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-slate-500">1 Base integra + 1 Coperchio integro</span>
+                </div>
+
+                <div>
+                  <label className="block font-medium text-rose-800 mb-1">BOX Danneggiati</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={recDanneggiati}
+                    onChange={e => setRecDanneggiati(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-full text-sm font-semibold text-rose-700 bg-white border border-rose-300 rounded-lg p-2 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-slate-500">Struttura o ganci rotti</span>
+                </div>
+
+                <div>
+                  <label className="block font-medium text-amber-800 mb-1">Basi Rotte</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={recBasiRotte}
+                    onChange={e => setRecBasiRotte(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-full text-sm bg-white border border-amber-300 rounded-lg p-2 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-slate-500">Basi lesionate</span>
+                </div>
+
+                <div>
+                  <label className="block font-medium text-amber-800 mb-1">Coperchi Rotti</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={recCoperchiRotti}
+                    onChange={e => setRecCoperchiRotti(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-full text-sm bg-white border border-amber-300 rounded-lg p-2 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-slate-500">Coperchi fessurati</span>
+                </div>
+
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">Basi Mancanti</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={recBasiMancanti}
+                    onChange={e => setRecBasiMancanti(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-full text-sm bg-white border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-slate-500">Solo coperchio consegnato</span>
+                </div>
+
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">Coperchi Mancanti</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={recCoperchiMancanti}
+                    onChange={e => setRecCoperchiMancanti(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-full text-sm bg-white border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-slate-500">Solo base consegnata</span>
+                </div>
+              </div>
+
+              {/* Live Stack calculation info */}
+              <div className="mt-2 pt-2 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
+                <span>
+                  Organizzazione in pile:{' '}
+                  <strong>
+                    {Math.floor(recIntegri / 7)} pile complete da 7
+                    {recIntegri % 7 > 0 ? ` + 1 parziale da ${recIntegri % 7}` : ''}
+                  </strong>
+                </span>
+                {recBollaQty > 0 && (
+                  <span
+                    className={`font-semibold ${
+                      recIntegri + recDanneggiati === recBollaQty ? 'text-emerald-600' : 'text-rose-600'
+                    }`}
+                  >
+                    Discrepanza bolla: {recBollaQty - (recIntegri + recDanneggiati)} pz
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Warehouse Zone & Notes */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Zona di Stoccaggio Pile
+                </label>
+                <select
+                  value={recZona}
+                  onChange={e => setRecZona(e.target.value)}
+                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  {settings.zoneDisponibili.map(z => (
+                    <option key={z} value={z}>
+                      {z}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Note Ricezione / DDT</label>
+                <input
+                  type="text"
+                  placeholder="Es. DDT n. 45892 del vettore DHL, controllato conforme"
+                  value={recNotes}
+                  onChange={e => setRecNotes(e.target.value)}
+                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="pt-3 border-t border-slate-200 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
+              >
+                Conferma Ricezione & Aggiorna Stock
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* 2. USAGE MODAL */}
+        {currentModal === 'usage' && (
+          <form onSubmit={handleUsageSubmit} className="p-6 space-y-4">
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs flex items-center justify-between text-amber-900">
+              <span>
+                Disponibilità attuale utilizzabile: <strong>{metrics.boxUtilizzabili} IPC BOX</strong>
+              </span>
+              <span>
+                Pile da 7 disponibili: <strong>{Math.floor(metrics.boxUtilizzabili / 7)}</strong>
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                Lavorazione / Commessa Associata
+              </label>
+              <select
+                value={useWoId}
+                onChange={e => handleSelectWorkOrder(e.target.value)}
+                className="w-full text-sm rounded-lg border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              >
+                <option value="">-- Lavorazione Libera / Scarico Diretto --</option>
+                {workOrders
+                  .filter(w => w.stato !== 'COMPLETATA')
+                  .map(w => (
+                    <option key={w.id} value={w.id}>
+                      {w.codice} - {w.descrizione} (Richiesti: {w.quantitaRichiesta}, Assegnati: {w.quantitaAssegnata})
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Codice Lavorazione</label>
+                <input
+                  type="text"
+                  placeholder="Es. LAV-INT-2026-120"
+                  value={useCode}
+                  onChange={e => setUseCode(e.target.value)}
+                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Quantità BOX da Prelevare <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max={metrics.boxUtilizzabili}
+                  value={useQty}
+                  onChange={e => setUseQty(Math.max(1, parseInt(e.target.value) || 0))}
+                  className="w-full text-sm font-bold text-amber-900 rounded-lg border border-amber-300 p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                />
+                <span className="text-[11px] text-slate-500">
+                  {useQty > 0
+                    ? `Corrisponde a ${Math.floor(useQty / 7)} pile da 7${useQty % 7 > 0 ? ` + ${useQty % 7} box` : ''}`
+                    : ''}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Note Operative</label>
+              <textarea
+                rows={2}
+                placeholder="Destinazione pallet, linea di produzione o cliente finale..."
+                value={useNotes}
+                onChange={e => setUseNotes(e.target.value)}
+                className="w-full text-sm rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="pt-3 border-t border-slate-200 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 text-sm font-semibold text-white bg-slate-900 hover:bg-black rounded-lg shadow-sm transition-colors"
+              >
+                Conferma Prelievo & Scarica Stock
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* 3. DAMAGE MODAL */}
+        {currentModal === 'damage' && (
+          <form onSubmit={handleDamageSubmit} className="p-6 space-y-4">
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900">
+              Registra componenti lesionati o rotti. Il sistema scalerà immediatamente la disponibilità di BOX
+              utilizzabili e sposterà i pezzi danneggiati in Quarantena / Riparazione.
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button
+                type="button"
+                onClick={() => setDamType('BASE')}
+                className={`p-3 rounded-xl border text-center transition-all ${
+                  damType === 'BASE'
+                    ? 'border-rose-500 bg-rose-50 text-rose-900 font-bold ring-2 ring-rose-500/20'
+                    : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                }`}
+              >
+                <div className="text-xs uppercase">Base Rotta</div>
+                <div className="text-[11px] text-slate-500 mt-1">Coperchio rimane integro</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDamType('COPERCHIO')}
+                className={`p-3 rounded-xl border text-center transition-all ${
+                  damType === 'COPERCHIO'
+                    ? 'border-rose-500 bg-rose-50 text-rose-900 font-bold ring-2 ring-rose-500/20'
+                    : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                }`}
+              >
+                <div className="text-xs uppercase">Coperchio Rotto</div>
+                <div className="text-[11px] text-slate-500 mt-1">Base rimane integra</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDamType('BOX_COMPLETO')}
+                className={`p-3 rounded-xl border text-center transition-all ${
+                  damType === 'BOX_COMPLETO'
+                    ? 'border-rose-500 bg-rose-50 text-rose-900 font-bold ring-2 ring-rose-500/20'
+                    : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                }`}
+              >
+                <div className="text-xs uppercase">BOX Completo</div>
+                <div className="text-[11px] text-slate-500 mt-1">Danno strutturale grave</div>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Quantità Danneggiata <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={damQty}
+                  onChange={e => setDamQty(Math.max(1, parseInt(e.target.value) || 0))}
+                  className="w-full text-sm font-bold text-rose-800 rounded-lg border border-rose-300 p-2.5 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Causa del Danno</label>
+                <select
+                  value={damCause}
+                  onChange={e => setDamCause(e.target.value as any)}
+                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 bg-white focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                >
+                  <option value="CADUTA_CARRELLO">Caduta dal carrello / Transpallet</option>
+                  <option value="SCHIACCIAMENTO">Schiacciamento / Sovraccarico</option>
+                  <option value="USURA_LAVORAZIONE">Usura lavorazione ordinaria</option>
+                  <option value="GANCIO_ROTTO">Rottura ganci laterali / cerniere</option>
+                  <option value="DIFETTO_FORNITURA">Difetto materiale fornitura</option>
+                  <option value="ALTRO">Altra causa / Da accertare</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Pila di Origine (Opzionale)</label>
+                <input
+                  type="text"
+                  placeholder="Es. PILA-A02 o Corsia 3"
+                  value={damPila}
+                  onChange={e => setDamPila(e.target.value)}
+                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Descrizione Danno</label>
+                <input
+                  type="text"
+                  placeholder="Es. Fondo forato da forche carrello elevatore"
+                  value={damDesc}
+                  onChange={e => setDamDesc(e.target.value)}
+                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-200 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm transition-colors"
+              >
+                Registra Danno
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* 4. RECOVERY MODAL */}
+        {currentModal === 'recovery' && (
+          <form onSubmit={handleRecoverySubmit} className="p-6 space-y-4">
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900">
+              Ripristina e rimetti in circolazione componenti precedentemente rotti o sostituiti con parti di ricambio.
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div
+                onClick={() => setRecovType('BASE')}
+                className={`p-3 rounded-xl border cursor-pointer ${
+                  recovType === 'BASE'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-bold ring-2 ring-emerald-500/20'
+                    : 'border-slate-200'
+                }`}
+              >
+                <div className="text-xs">Ripara Base</div>
+                <div className="text-sm font-bold text-rose-600">{stock.basiRotte} rotte</div>
+              </div>
+
+              <div
+                onClick={() => setRecovType('COPERCHIO')}
+                className={`p-3 rounded-xl border cursor-pointer ${
+                  recovType === 'COPERCHIO'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-bold ring-2 ring-emerald-500/20'
+                    : 'border-slate-200'
+                }`}
+              >
+                <div className="text-xs">Ripara Coperchio</div>
+                <div className="text-sm font-bold text-rose-600">{stock.coperchiRotti} rotti</div>
+              </div>
+
+              <div
+                onClick={() => setRecovType('BOX_COMPLETO')}
+                className={`p-3 rounded-xl border cursor-pointer ${
+                  recovType === 'BOX_COMPLETO'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-bold ring-2 ring-emerald-500/20'
+                    : 'border-slate-200'
+                }`}
+              >
+                <div className="text-xs">Ripara Box Completo</div>
+                <div className="text-sm font-bold text-rose-600">{stock.boxDanneggiatiTotali || 0} rotti</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Quantità da Ripristinare
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={recovQty}
+                  onChange={e => setRecovQty(Math.max(1, parseInt(e.target.value) || 0))}
+                  className="w-full text-sm font-bold text-emerald-800 rounded-lg border border-emerald-300 p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Note Riparazione / Ricambio</label>
+                <input
+                  type="text"
+                  placeholder="Es. Sostituzione cardini con perni nuovi"
+                  value={recovNotes}
+                  onChange={e => setRecovNotes(e.target.value)}
+                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-200 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors"
+              >
+                Conferma Recupero
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* 5. ADJUST MODAL */}
+        {currentModal === 'adjust' && (
+          <form onSubmit={handleAdjustSubmit} className="p-6 space-y-4">
+            <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs text-purple-900">
+              Rettifica diretta inventario fisico. Utilizza questa procedura solo in caso di discrepanze accertate
+              durante i conteggi di magazzino.
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Basi Integre</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={adjBasiInt}
+                  onChange={e => setAdjBasiInt(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-full text-sm font-bold text-slate-900 rounded-lg border border-slate-300 p-2 focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Coperchi Integri</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={adjCopInt}
+                  onChange={e => setAdjCopInt(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-full text-sm font-bold text-slate-900 rounded-lg border border-slate-300 p-2 focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Basi Rotte</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={adjBasiRot}
+                  onChange={e => setAdjBasiRot(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-full text-sm font-bold text-rose-700 rounded-lg border border-slate-300 p-2 focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Coperchi Rotti</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={adjCopRot}
+                  onChange={e => setAdjCopRot(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-full text-sm font-bold text-rose-700 rounded-lg border border-slate-300 p-2 focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Motivazione Rettifica</label>
+              <input
+                type="text"
+                value={adjMotivo}
+                onChange={e => setAdjMotivo(e.target.value)}
+                className="w-full text-sm rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="pt-3 border-t border-slate-200 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-sm transition-colors"
+              >
+                Salva Rettifica & Rigenera Pile
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
