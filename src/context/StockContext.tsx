@@ -10,6 +10,7 @@ import {
   StackBoxItem,
   StockMovement,
   WorkOrder,
+  IPCInventorySheet,
 } from '../types';
 import {
   initialComponentStock,
@@ -19,6 +20,7 @@ import {
   initialPiles,
   initialSettings,
   initialWorkOrders,
+  initialIPCInventorySheets,
 } from '../data/initialData';
 
 interface StockContextType {
@@ -97,6 +99,11 @@ interface StockContextType {
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   rebuildPilesManually: () => void;
   updatePilaZone: (pilaId: string, nuovaZona: string) => void;
+  // IPC Inventory Sheets
+  ipcSheets: import('../types').IPCInventorySheet[];
+  saveIPCSheet: (sheet: import('../types').IPCInventorySheet) => void;
+  deleteIPCSheet: (id: string) => void;
+  applyIPCSheetToStock: (sheet: import('../types').IPCInventorySheet) => { success: boolean; message: string };
   resetAllData: () => void;
   zeroAllData: () => void;
 }
@@ -135,6 +142,11 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [movements, setMovements] = useState<StockMovement[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}movements`);
     return saved ? JSON.parse(saved) : initialMovements;
+  });
+
+  const [ipcSheets, setIpcSheets] = useState<IPCInventorySheet[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}ipcSheets`);
+    return saved ? JSON.parse(saved) : initialIPCInventorySheets;
   });
 
   const [settings, setSettings] = useState<AppSettings>(() => {
@@ -182,6 +194,10 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem(`${STORAGE_PREFIX}settings`, JSON.stringify(settings));
   }, [settings]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_PREFIX}ipcSheets`, JSON.stringify(ipcSheets));
+  }, [ipcSheets]);
 
   // Compute stock metrics
   const metrics = useMemo<ComputedStockMetrics>(() => {
@@ -841,6 +857,81 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
 
+  const saveIPCSheet = (sheet: IPCInventorySheet) => {
+    setIpcSheets(prev => {
+      const index = prev.findIndex(s => s.id === sheet.id);
+      if (index >= 0) {
+        const updated = [...prev];
+        updated[index] = sheet;
+        return updated;
+      }
+      return [sheet, ...prev];
+    });
+  };
+
+  const deleteIPCSheet = (id: string) => {
+    setIpcSheets(prev => prev.filter(s => s.id !== id));
+  };
+
+  const applyIPCSheetToStock = (sheet: IPCInventorySheet) => {
+    const totalBoxIntegri = sheet.rows.reduce(
+      (sum, r) =>
+        sum +
+        (Number(r.giaImpilati) || 0) +
+        (Number(r.daImpilare) || 0) +
+        (Number(r.vuotiProduzione) || 0) +
+        (Number(r.pieniProduzione) || 0),
+      0
+    );
+    const totalDanneggiatiRighe = sheet.rows.reduce((sum, r) => sum + (Number(r.danneggiatiRotti) || 0), 0);
+    const totalBoxRottiNonUtilizzabili = Number(sheet.palletBoxRottiNonUtilizzabili) || totalDanneggiatiRighe;
+
+    const extraBasi = Number(sheet.eccedenze?.basi) || 0;
+    const extraCoperchi = Number(sheet.eccedenze?.coperchi) || 0;
+
+    const newBasiIntegre = totalBoxIntegri + extraBasi;
+    const newCoperchiIntegri = totalBoxIntegri + extraCoperchi;
+    const newBasiRotte = totalBoxRottiNonUtilizzabili;
+    const newCoperchiRotti = totalBoxRottiNonUtilizzabili;
+
+    const deltaBasi = newBasiIntegre - stock.basiIntegre;
+    const deltaCoperchi = newCoperchiIntegri - stock.coperchiIntegri;
+    const deltaBasiRotte = newBasiRotte - stock.basiRotte;
+    const deltaCoperchiRotti = newCoperchiRotti - stock.coperchiRotti;
+
+    const updatedStock: ComponentStock = {
+      ...stock,
+      basiIntegre: newBasiIntegre,
+      coperchiIntegri: newCoperchiIntegri,
+      basiRotte: newBasiRotte,
+      coperchiRotti: newCoperchiRotti,
+      boxDanneggiatiTotali: totalBoxRottiNonUtilizzabili,
+    };
+
+    setStock(updatedStock);
+    const usable = Math.min(newBasiIntegre, newCoperchiIntegri);
+    setPiles(currPiles => generatePilesForStock(usable, currPiles));
+
+    addMovement(
+      'RETTIFICA',
+      usable,
+      deltaBasi,
+      deltaCoperchi,
+      deltaBasiRotte,
+      deltaCoperchiRotti,
+      `Riallineamento Inventario Pool IPC (${sheet.poolMemberOperator || 'Poste Italiane'})`,
+      `Aggiornamento stock da Scheda Conteggio IPC del ${sheet.data || sheet.timestamp}. Box integri rilevati: ${totalBoxIntegri}, Danneggiati/Rotti: ${totalBoxRottiNonUtilizzabili}, Eccedenze Basi: ${extraBasi}, Eccedenze Coperchi: ${extraCoperchi}`,
+      undefined,
+      undefined,
+      sheet.poolMemberOperator || activeOperator
+    );
+
+    return {
+      success: true,
+      message: `Magazzino riallineato con successo da Scheda IPC: ${usable} BOX utilizzabili, ${totalBoxRottiNonUtilizzabili} rotti/danneggiati.`,
+    };
+  };
+
   const resetAllData = () => {
     setStock(initialComponentStock);
     setPiles(initialPiles);
@@ -849,6 +940,7 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setDamageReports(initialDamageReports);
     setMovements(initialMovements);
     setSettings(initialSettings);
+    setIpcSheets(initialIPCInventorySheets);
   };
 
   const zeroAllData = () => {
@@ -866,6 +958,7 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setOrders([]);
     setWorkOrders([]);
     setDamageReports([]);
+    setIpcSheets([]);
     addMovement(
       'RETTIFICA',
       0,
@@ -907,6 +1000,10 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateSettings,
         rebuildPilesManually,
         updatePilaZone,
+        ipcSheets,
+        saveIPCSheet,
+        deleteIPCSheet,
+        applyIPCSheetToStock,
         resetAllData,
         zeroAllData,
       }}

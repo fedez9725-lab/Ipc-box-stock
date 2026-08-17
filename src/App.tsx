@@ -4,6 +4,7 @@ import { Sidebar, TabType } from './components/layout/Sidebar';
 import { Navbar } from './components/layout/Navbar';
 import { DashboardView } from './components/dashboard/DashboardView';
 import { StockView } from './components/stock/StockView';
+import { IPCInventoryView } from './components/ipc/IPCInventoryView';
 import { PilesView } from './components/piles/PilesView';
 import { OrdersView } from './components/orders/OrdersView';
 import { WorkOrdersView } from './components/workorders/WorkOrdersView';
@@ -54,6 +55,7 @@ export default function App() {
               <DashboardView setCurrentTab={setCurrentTab} openModal={openModal} />
             )}
             {currentTab === 'stock' && <StockView openModal={openModal} />}
+            {currentTab === 'ipc-sheet' && <IPCInventoryView />}
             {currentTab === 'piles' && <PilesView />}
             {currentTab === 'orders' && <OrdersView openModal={openModal} />}
             {currentTab === 'workorders' && <WorkOrdersView openModal={openModal} />}

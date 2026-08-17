@@ -153,3 +153,35 @@ export interface AppSettings {
   operatori: string[];
   autoDistribuzionePile: boolean;
 }
+
+export interface IPCInventoryRow {
+  id: string;
+  csiMle: string;
+  impcCode: string;
+  dataConteggio: string;
+  orarioConteggio: string;
+  giaImpilati: number;
+  daImpilare: number;
+  vuotiProduzione: number;
+  pieniProduzione: number;
+  danneggiatiRotti: number;
+  totaleCsiMle: number;
+}
+
+export interface IPCInventoryExtra {
+  coperchi: number;
+  casse: number;
+  basi: number;
+}
+
+export interface IPCInventorySheet {
+  id: string;
+  timestamp: string;
+  data: string;
+  poolMemberOperator: string;
+  rows: IPCInventoryRow[];
+  eccedenze: IPCInventoryExtra;
+  mancanti: IPCInventoryExtra;
+  palletBoxRottiNonUtilizzabili: number;
+  note?: string;
+}

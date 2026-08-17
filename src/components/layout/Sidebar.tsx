@@ -20,6 +20,7 @@ import { useStock } from '../../context/StockContext';
 export type TabType =
   | 'dashboard'
   | 'stock'
+  | 'ipc-sheet'
   | 'piles'
   | 'orders'
   | 'workorders'
@@ -54,6 +55,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Package,
       badge: metrics.boxUtilizzabili.toString(),
       badgeColor: metrics.statoScorta === 'ROSSO' ? 'bg-red-500 text-white' : 'bg-emerald-600 text-white',
+    },
+    {
+      id: 'ipc-sheet' as TabType,
+      label: 'Scheda Inventario IPC',
+      icon: FileSpreadsheet,
+      badge: metrics.totaleComponentiRotte > 0 ? `${metrics.totaleComponentiRotte} rotti` : null,
+      badgeColor: metrics.totaleComponentiRotte > 0 ? 'bg-rose-600 text-white' : 'bg-slate-700 text-slate-300',
     },
     { id: 'piles' as TabType, label: 'Pile IPC BOX (Max 7)', icon: Warehouse, badge: 'Max 7' },
     {

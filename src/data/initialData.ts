@@ -465,3 +465,52 @@ export const initialMovements: StockMovement[] = [
     note: 'Riallineamento conteggio fisico con WMS.',
   },
 ];
+
+export const initialIPCInventorySheets: import('../types').IPCInventorySheet[] = [
+  {
+    id: 'ipc-inv-001',
+    timestamp: '2026-08-17 09:30',
+    data: '2026-08-17',
+    poolMemberOperator: 'Poste Italiane - Hub Logistico',
+    note: 'Conteggio inventariale periodico Pool IPC Pallet Box',
+    rows: [
+      {
+        id: 'row-1',
+        csiMle: 'CSI 01 - Magazzino Centrale',
+        impcCode: 'ITBLGA',
+        dataConteggio: '2026-08-17',
+        orarioConteggio: '08:30',
+        giaImpilati: 35,
+        daImpilare: 14,
+        vuotiProduzione: 5,
+        pieniProduzione: 18,
+        danneggiatiRotti: 3,
+        totaleCsiMle: 75,
+      },
+      {
+        id: 'row-2',
+        csiMle: 'MLE 02 - Capannone Smistamento',
+        impcCode: 'ITMXPA',
+        dataConteggio: '2026-08-17',
+        orarioConteggio: '09:00',
+        giaImpilati: 21,
+        daImpilare: 7,
+        vuotiProduzione: 4,
+        pieniProduzione: 12,
+        danneggiatiRotti: 2,
+        totaleCsiMle: 46,
+      },
+    ],
+    eccedenze: {
+      coperchi: 4,
+      casse: 0,
+      basi: 2,
+    },
+    mancanti: {
+      coperchi: 0,
+      casse: 0,
+      basi: 1,
+    },
+    palletBoxRottiNonUtilizzabili: 5,
+  },
+];
