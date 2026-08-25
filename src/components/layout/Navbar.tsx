@@ -12,9 +12,12 @@ import {
   Trash2,
   AlertOctagon,
   Layers,
+  Monitor,
+  MapPin,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { TabType } from './Sidebar';
+import { getWorkstationHealth } from '../dispacciatori/WorkstationsView';
 
 interface NavbarProps {
   currentTab: TabType;
@@ -29,14 +32,17 @@ export const Navbar: React.FC<NavbarProps> = ({
   setMobileOpen,
   openModal,
 }) => {
-  const { metrics, settings, activeOperator, setActiveOperator, embargoLDVs } = useStock();
+  const { metrics, settings, activeOperator, setActiveOperator, embargoLDVs, workstations } = useStock();
 
   const blockedLDVsCount = embargoLDVs.filter(l => l.stato === 'BLOCCATO').length;
+  const brokenWorkstationsCount = workstations.filter(ws => getWorkstationHealth(ws).status !== 'OPERATIVA').length;
 
   const getTabTitle = (tab: TabType) => {
     switch (tab) {
       case 'dashboard':
         return 'Dashboard Panoramica IPC';
+      case 'workstations':
+        return 'Mappa Postazioni Dispacciatori';
       case 'stock':
         return 'Gestione Stock & Componenti IPC';
       case 'ipc-sheet':
@@ -87,6 +93,34 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Side: Quick Action Buttons & Operator */}
         <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+          {/* DEDICATED TOP BUTTON: MAPPA POSTAZIONI DISPACCIATORI */}
+          <button
+            id="top-nav-workstations-btn"
+            onClick={() => setCurrentTab(currentTab === 'workstations' ? 'dashboard' : 'workstations')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer shadow-2xs ${
+              currentTab === 'workstations'
+                ? 'bg-blue-700 text-white shadow-sm ring-2 ring-blue-400/40'
+                : brokenWorkstationsCount > 0
+                ? 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300'
+                : 'bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200'
+            }`}
+            title="Accedi alla Mappa Planimetrica Postazioni Dispacciatori e Gestione Hardware"
+          >
+            <Monitor className={`w-3.5 h-3.5 ${currentTab === 'workstations' ? 'text-white' : brokenWorkstationsCount > 0 ? 'text-amber-600' : 'text-blue-600'}`} />
+            <span>Mappa Postazioni</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
+                currentTab === 'workstations'
+                  ? 'bg-white text-blue-800'
+                  : brokenWorkstationsCount > 0
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-blue-600 text-white'
+              }`}
+            >
+              {brokenWorkstationsCount > 0 ? `${brokenWorkstationsCount} guasti` : workstations.length}
+            </span>
+          </button>
+
           {/* DEDICATED TOP BUTTON: REGISTRO EMBARGO (Separated Extra Module) */}
           <button
             id="top-nav-embargo-btn"

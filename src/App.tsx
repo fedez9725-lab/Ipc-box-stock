@@ -6,6 +6,7 @@ import { DashboardView } from './components/dashboard/DashboardView';
 import { StockView } from './components/stock/StockView';
 import { IPCInventoryView } from './components/ipc/IPCInventoryView';
 import { EmbargoView } from './components/embargo/EmbargoView';
+import { WorkstationsView } from './components/dispacciatori/WorkstationsView';
 import { PilesView } from './components/piles/PilesView';
 import { OrdersView } from './components/orders/OrdersView';
 import { WorkOrdersView } from './components/workorders/WorkOrdersView';
@@ -56,6 +57,7 @@ export default function App() {
             {currentTab === 'dashboard' && (
               <DashboardView setCurrentTab={setCurrentTab} openModal={openModal} />
             )}
+            {currentTab === 'workstations' && <WorkstationsView />}
             {currentTab === 'stock' && <StockView openModal={openModal} />}
             {currentTab === 'ipc-sheet' && <IPCInventoryView />}
             {currentTab === 'embargo' && <EmbargoView />}

@@ -198,3 +198,52 @@ export interface EmbargoLDV {
   note?: string;
   collocazione?: string;
 }
+
+export type HardwareStatus = 'OK' | 'GUASTO' | 'PROBLEMA' | 'MANCANTE' | 'OFFLINE';
+
+export interface ComponentItemState {
+  status: HardwareStatus;
+  detail?: string;
+  lastUpdated?: string;
+}
+
+export interface WorkstationHardware {
+  pcMonitor: ComponentItemState;
+  mouse: ComponentItemState;
+  tastiera: ComponentItemState;
+  pistola: ComponentItemState;
+  stampanteTermica: ComponentItemState;
+  stampanteDocumenti: ComponentItemState;
+  internet: ComponentItemState;
+  ilp: ComponentItemState;
+}
+
+export type WorkstationOverallStatus = 'OPERATIVA' | 'ATTENZIONE' | 'FUORI_SERVIZIO';
+
+export interface Workstation {
+  id: string;
+  codice: string; // es: "A1", "A2", "B1", "C1", "D1"...
+  nome: string;   // es: "Postazione A1"
+  bancoId: 'LATO_A' | 'LATO_B' | 'LATO_C' | 'LATO_D' | string;
+  bancoNome: string;
+  posizione: number; // 1, 2, 3...
+  assegnazione: string; // "Libera", "Svizzera", "Austria", "CRONOS", "Germania", "Francia", ecc.
+  coloreTema?: 'BLU' | 'GIALLO' | 'VERDE' | 'GRIGIO';
+  hardware: WorkstationHardware;
+  operatore?: string;
+  note?: string;
+  ultimoControllo: string;
+  ultimoOperatore?: string;
+}
+
+export interface WorkstationLog {
+  id: string;
+  workstationId: string;
+  workstationCodice: string;
+  timestamp: string;
+  operatore: string;
+  componente: string;
+  statoPrecedente: string;
+  nuovoStato: string;
+  note?: string;
+}

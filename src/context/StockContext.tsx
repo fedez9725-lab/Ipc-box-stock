@@ -12,6 +12,10 @@ import {
   WorkOrder,
   IPCInventorySheet,
   EmbargoLDV,
+  Workstation,
+  WorkstationLog,
+  WorkstationHardware,
+  HardwareStatus,
 } from '../types';
 import {
   initialComponentStock,
@@ -23,6 +27,9 @@ import {
   initialWorkOrders,
   initialIPCInventorySheets,
   initialEmbargoLDVs,
+  initialWorkstations,
+  initialWorkstationLogs,
+  createDefaultHardware,
 } from '../data/initialData';
 
 interface StockContextType {
@@ -126,6 +133,29 @@ interface StockContextType {
   deleteEmbargoLDV: (id: string) => void;
   deleteEmbargoLDVsByCountry: (nazione: string) => void;
   clearAllEmbargoLDVs: () => void;
+  // Workstations Management
+  workstations: Workstation[];
+  workstationLogs: WorkstationLog[];
+  updateWorkstationComponent: (
+    workstationId: string,
+    componentKey: keyof WorkstationHardware,
+    newStatus: HardwareStatus,
+    detail?: string
+  ) => void;
+  updateWorkstation: (id: string, updates: Partial<Workstation>) => void;
+  quickAuditWorkstation: (id: string, allOk: boolean, operatore?: string) => void;
+  resetAllWorkstationsToOk: (operatore?: string) => void;
+  addWorkstation: (data: {
+    codice: string;
+    nome: string;
+    bancoId: 'LATO_A' | 'LATO_B' | 'LATO_C' | 'LATO_D' | string;
+    bancoNome: string;
+    assegnazione?: string;
+    coloreTema?: 'BLU' | 'GIALLO' | 'VERDE' | 'GRIGIO';
+    operatore?: string;
+    note?: string;
+  }) => Workstation;
+  deleteWorkstation: (id: string) => void;
   resetAllData: () => void;
   zeroAllData: () => void;
 }
@@ -174,6 +204,44 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [embargoLDVs, setEmbargoLDVs] = useState<EmbargoLDV[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}embargoLDVs`);
     return saved ? JSON.parse(saved) : initialEmbargoLDVs;
+  });
+
+  const [workstations, setWorkstations] = useState<Workstation[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}workstations`);
+    if (saved) {
+      try {
+        const parsed: Workstation[] = JSON.parse(saved);
+        // List of legacy mock demo names to clear out automatically
+        const legacyMockNames = [
+          'Giuseppe Ferrari',
+          'Laura Bianchi',
+          'Elena Conti',
+          'Davide Neri',
+          'Chiara Moretti',
+          'Federico Fontana',
+          'Paolo Rinaldi',
+          'Francesca Leone',
+          'Marco Rossi',
+          'Simone Gallo',
+          'Roberto Villa',
+          'Antonio Russo',
+          'Matteo Gatti',
+        ];
+        return parsed.map(ws => ({
+          ...ws,
+          operatore: legacyMockNames.includes(ws.operatore) ? '' : ws.operatore,
+          ultimoOperatore: legacyMockNames.includes(ws.ultimoOperatore) ? '' : ws.ultimoOperatore,
+        }));
+      } catch (e) {
+        console.error('Error parsing workstations:', e);
+      }
+    }
+    return initialWorkstations;
+  });
+
+  const [workstationLogs, setWorkstationLogs] = useState<WorkstationLog[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}workstationLogs`);
+    return saved ? JSON.parse(saved) : initialWorkstationLogs;
   });
 
   const [settings, setSettings] = useState<AppSettings>(() => {
@@ -229,6 +297,14 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem(`${STORAGE_PREFIX}embargoLDVs`, JSON.stringify(embargoLDVs));
   }, [embargoLDVs]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_PREFIX}workstations`, JSON.stringify(workstations));
+  }, [workstations]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_PREFIX}workstationLogs`, JSON.stringify(workstationLogs));
+  }, [workstationLogs]);
 
   // Compute stock metrics
   const metrics = useMemo<ComputedStockMetrics>(() => {
@@ -1041,6 +1117,173 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setEmbargoLDVs([]);
   };
 
+  // Workstation Actions
+  const updateWorkstationComponent = (
+    workstationId: string,
+    componentKey: keyof WorkstationHardware,
+    newStatus: HardwareStatus,
+    detail?: string
+  ) => {
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    let wsCodice = '';
+    let oldStatus = 'OK';
+
+    setWorkstations(prev =>
+      prev.map(ws => {
+        if (ws.id === workstationId) {
+          wsCodice = ws.codice;
+          oldStatus = ws.hardware[componentKey]?.status || 'OK';
+          return {
+            ...ws,
+            ultimoControllo: now,
+            ultimoOperatore: activeOperator,
+            hardware: {
+              ...ws.hardware,
+              [componentKey]: {
+                status: newStatus,
+                detail: detail !== undefined ? detail : ws.hardware[componentKey]?.detail || '',
+                lastUpdated: now,
+              },
+            },
+          };
+        }
+        return ws;
+      })
+    );
+
+    // Register log entry
+    if (oldStatus !== newStatus || detail) {
+      const newLog: WorkstationLog = {
+        id: `wlog-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        workstationId,
+        workstationCodice: wsCodice || workstationId,
+        timestamp: now,
+        operatore: activeOperator,
+        componente: String(componentKey),
+        statoPrecedente: oldStatus,
+        nuovoStato: newStatus,
+        note: detail || `Aggiornato stato ${String(componentKey)} da ${oldStatus} a ${newStatus}`,
+      };
+      setWorkstationLogs(prev => [newLog, ...prev.slice(0, 99)]);
+    }
+  };
+
+  const updateWorkstation = (id: string, updates: Partial<Workstation>) => {
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    setWorkstations(prev =>
+      prev.map(ws =>
+        ws.id === id
+          ? {
+              ...ws,
+              ...updates,
+              ultimoControllo: now,
+              ultimoOperatore: activeOperator,
+            }
+          : ws
+      )
+    );
+  };
+
+  const quickAuditWorkstation = (id: string, allOk: boolean, operatore?: string) => {
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    const op = operatore || activeOperator;
+
+    setWorkstations(prev =>
+      prev.map(ws => {
+        if (ws.id === id) {
+          if (allOk) {
+            return {
+              ...ws,
+              ultimoControllo: now,
+              ultimoOperatore: op,
+              hardware: createDefaultHardware(),
+            };
+          }
+          return {
+            ...ws,
+            ultimoControllo: now,
+            ultimoOperatore: op,
+          };
+        }
+        return ws;
+      })
+    );
+
+    const newLog: WorkstationLog = {
+      id: `wlog-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      workstationId: id,
+      workstationCodice: id,
+      timestamp: now,
+      operatore: op,
+      componente: 'AUDIT_GLOBALE',
+      statoPrecedente: allOk ? 'ANOMALIE_RESETTATE' : 'VERIFICATO',
+      nuovoStato: allOk ? 'OK' : 'IN_VERIFICA',
+      note: allOk ? 'Check-in rapido superato: tutti i componenti hardware segnati come OK' : 'Check-in rapido eseguito',
+    };
+    setWorkstationLogs(prev => [newLog, ...prev.slice(0, 99)]);
+  };
+
+  const resetAllWorkstationsToOk = (operatore?: string) => {
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    const op = operatore || activeOperator;
+
+    setWorkstations(prev =>
+      prev.map(ws => ({
+        ...ws,
+        ultimoControllo: now,
+        ultimoOperatore: op,
+        hardware: createDefaultHardware(),
+      }))
+    );
+
+    const newLog: WorkstationLog = {
+      id: `wlog-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      workstationId: 'ALL',
+      workstationCodice: 'TUTTE',
+      timestamp: now,
+      operatore: op,
+      componente: 'TUTTI',
+      statoPrecedente: 'VARIO',
+      nuovoStato: 'OK',
+      note: 'Ripristino globale inizio turno: tutte le 13 postazioni segnate come 100% operative',
+    };
+    setWorkstationLogs(prev => [newLog, ...prev.slice(0, 99)]);
+  };
+
+  const addWorkstation = (data: {
+    codice: string;
+    nome: string;
+    bancoId: 'LATO_A' | 'LATO_B' | 'LATO_C' | 'LATO_D' | string;
+    bancoNome: string;
+    assegnazione?: string;
+    coloreTema?: 'BLU' | 'GIALLO' | 'VERDE' | 'GRIGIO';
+    operatore?: string;
+    note?: string;
+  }): Workstation => {
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    const newWs: Workstation = {
+      id: `ws-${Date.now()}`,
+      codice: data.codice,
+      nome: data.nome,
+      bancoId: data.bancoId,
+      bancoNome: data.bancoNome,
+      posizione: workstations.filter(w => w.bancoId === data.bancoId).length + 1,
+      assegnazione: data.assegnazione || 'Libera',
+      coloreTema: data.coloreTema || 'BLU',
+      hardware: createDefaultHardware(),
+      operatore: data.operatore || '',
+      note: data.note || '',
+      ultimoControllo: now,
+      ultimoOperatore: activeOperator,
+    };
+    setWorkstations(prev => [...prev, newWs]);
+    return newWs;
+  };
+
+  const deleteWorkstation = (id: string) => {
+    setWorkstations(prev => prev.filter(ws => ws.id !== id));
+  };
+
   const resetAllData = () => {
     setStock(initialComponentStock);
     setPiles(initialPiles);
@@ -1051,6 +1294,8 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSettings(initialSettings);
     setIpcSheets(initialIPCInventorySheets);
     setEmbargoLDVs(initialEmbargoLDVs);
+    setWorkstations(initialWorkstations);
+    setWorkstationLogs(initialWorkstationLogs);
   };
 
   const zeroAllData = () => {
@@ -1122,6 +1367,14 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deleteEmbargoLDV,
         deleteEmbargoLDVsByCountry,
         clearAllEmbargoLDVs,
+        workstations,
+        workstationLogs,
+        updateWorkstationComponent,
+        updateWorkstation,
+        quickAuditWorkstation,
+        resetAllWorkstationsToOk,
+        addWorkstation,
+        deleteWorkstation,
         resetAllData,
         zeroAllData,
       }}

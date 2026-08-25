@@ -15,11 +15,15 @@ import {
   PlusCircle,
   Warehouse,
   AlertOctagon,
+  Monitor,
+  MapPin,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
+import { getWorkstationHealth } from '../dispacciatori/WorkstationsView';
 
 export type TabType =
   | 'dashboard'
+  | 'workstations'
   | 'stock'
   | 'ipc-sheet'
   | 'embargo'
@@ -44,14 +48,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   mobileOpen,
   setMobileOpen,
 }) => {
-  const { metrics, settings, orders, workOrders, embargoLDVs } = useStock();
+  const { metrics, settings, orders, workOrders, embargoLDVs, workstations } = useStock();
 
   const pendingOrdersCount = orders.filter(o => o.stato === 'IN_ATTESA' || o.stato === 'PARZIALE').length;
   const activeWorkOrdersCount = workOrders.filter(w => w.stato === 'IN_CORSO' || w.stato === 'PIANIFICATA').length;
   const blockedLDVsCount = embargoLDVs.filter(l => l.stato === 'BLOCCATO').length;
+  const brokenWorkstationsCount = workstations.filter(ws => getWorkstationHealth(ws).status !== 'OPERATIVA').length;
 
   const ipcNavItems = [
     { id: 'dashboard' as TabType, label: 'Dashboard', icon: Layers, badge: null },
+    {
+      id: 'workstations' as TabType,
+      label: 'Postazioni Dispacciatori',
+      icon: Monitor,
+      badge: brokenWorkstationsCount > 0 ? `${brokenWorkstationsCount} guasti` : `${workstations.length} post.`,
+      badgeColor: brokenWorkstationsCount > 0 ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white',
+    },
     {
       id: 'stock' as TabType,
       label: 'Stock & Componenti',
