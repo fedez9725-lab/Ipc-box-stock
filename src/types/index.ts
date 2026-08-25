@@ -185,3 +185,16 @@ export interface IPCInventorySheet {
   palletBoxRottiNonUtilizzabili: number;
   note?: string;
 }
+
+export interface EmbargoLDV {
+  id: string;
+  nazione: string;
+  codiceLDV: string;
+  dataBlocco: string;
+  orarioBlocco?: string;
+  motivo?: string;
+  stato: 'BLOCCATO' | 'IN_VERIFICA' | 'SVINCOLATO' | 'RESO_MITTENTE';
+  operatore: string;
+  note?: string;
+  collocazione?: string;
+}

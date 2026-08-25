@@ -14,6 +14,7 @@ import {
   X,
   PlusCircle,
   Warehouse,
+  AlertOctagon,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 
@@ -21,6 +22,7 @@ export type TabType =
   | 'dashboard'
   | 'stock'
   | 'ipc-sheet'
+  | 'embargo'
   | 'piles'
   | 'orders'
   | 'workorders'
@@ -42,12 +44,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   mobileOpen,
   setMobileOpen,
 }) => {
-  const { metrics, settings, orders, workOrders } = useStock();
+  const { metrics, settings, orders, workOrders, embargoLDVs } = useStock();
 
   const pendingOrdersCount = orders.filter(o => o.stato === 'IN_ATTESA' || o.stato === 'PARZIALE').length;
   const activeWorkOrdersCount = workOrders.filter(w => w.stato === 'IN_CORSO' || w.stato === 'PIANIFICATA').length;
+  const blockedLDVsCount = embargoLDVs.filter(l => l.stato === 'BLOCCATO').length;
 
-  const navItems = [
+  const ipcNavItems = [
     { id: 'dashboard' as TabType, label: 'Dashboard', icon: Layers, badge: null },
     {
       id: 'stock' as TabType,
@@ -81,6 +84,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'forecast' as TabType, label: 'Fabbisogno & Calcolo', icon: Calculator, badge: null },
     { id: 'movements' as TabType, label: 'Storico Movimenti', icon: History, badge: null },
     { id: 'reports' as TabType, label: 'Report & Analisi', icon: BarChart3, badge: null },
+  ];
+
+  const extraNavItems = [
+    {
+      id: 'embargo' as TabType,
+      label: 'Registro LDV (Embargo)',
+      icon: AlertOctagon,
+      badge: blockedLDVsCount > 0 ? `${blockedLDVsCount} bloccate` : null,
+      badgeColor: 'bg-rose-600 text-white',
+    },
+  ];
+
+  const systemNavItems = [
     { id: 'settings' as TabType, label: 'Impostazioni Hub', icon: SettingsIcon, badge: null },
   ];
 
@@ -162,40 +178,109 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation Menu */}
-        <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
-          <div className="px-3 pb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-            Menu Operativo
+        <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-4">
+          {/* Core IPC Hub Menu */}
+          <div className="space-y-1">
+            <div className="px-3 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              Gestione Magazzino IPC
+            </div>
+            {ipcNavItems.map(item => {
+              const Icon = item.icon;
+              const isActive = currentTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  id={`nav-tab-${item.id}`}
+                  onClick={() => handleSelect(item.id)}
+                  className={`w-full flex items-center justify-between px-3.5 py-2 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
+                    isActive
+                      ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-semibold'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        item.badgeColor || 'bg-slate-700 text-slate-300'
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
-          {navItems.map(item => {
-            const Icon = item.icon;
-            const isActive = currentTab === item.id;
-            return (
-              <button
-                key={item.id}
-                id={`nav-tab-${item.id}`}
-                onClick={() => handleSelect(item.id)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
-                  isActive
-                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-semibold'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                  <span>{item.label}</span>
-                </div>
-                {item.badge && (
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      item.badgeColor || 'bg-slate-700 text-slate-300'
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+
+          {/* Extra Module Section */}
+          <div className="space-y-1 pt-1 border-t border-slate-800/80">
+            <div className="px-3 pb-1.5 text-[10px] font-bold text-rose-400 uppercase tracking-wider flex items-center justify-between">
+              <span>Modulo Extra</span>
+              <span className="text-[9px] text-slate-500 font-normal">Registro Giornaliero</span>
+            </div>
+            {extraNavItems.map(item => {
+              const Icon = item.icon;
+              const isActive = currentTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  id={`nav-tab-${item.id}`}
+                  onClick={() => handleSelect(item.id)}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
+                    isActive
+                      ? 'bg-rose-600 text-white shadow-sm shadow-rose-600/30 font-bold ring-1 ring-rose-400/40'
+                      : 'text-rose-300 bg-rose-950/20 border border-rose-900/30 hover:text-white hover:bg-rose-900/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-rose-400'}`} />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        item.badgeColor || 'bg-rose-600 text-white'
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* System Section */}
+          <div className="space-y-1 pt-1 border-t border-slate-800/80">
+            <div className="px-3 pb-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              Configurazione
+            </div>
+            {systemNavItems.map(item => {
+              const Icon = item.icon;
+              const isActive = currentTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  id={`nav-tab-${item.id}`}
+                  onClick={() => handleSelect(item.id)}
+                  className={`w-full flex items-center justify-between px-3.5 py-2 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
+                    isActive
+                      ? 'bg-blue-600 text-white shadow-sm font-semibold'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <span>{item.label}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </nav>
 
         {/* Footer Info */}

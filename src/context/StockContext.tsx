@@ -11,6 +11,7 @@ import {
   StockMovement,
   WorkOrder,
   IPCInventorySheet,
+  EmbargoLDV,
 } from '../types';
 import {
   initialComponentStock,
@@ -21,6 +22,7 @@ import {
   initialSettings,
   initialWorkOrders,
   initialIPCInventorySheets,
+  initialEmbargoLDVs,
 } from '../data/initialData';
 
 interface StockContextType {
@@ -104,6 +106,26 @@ interface StockContextType {
   saveIPCSheet: (sheet: import('../types').IPCInventorySheet) => void;
   deleteIPCSheet: (id: string) => void;
   applyIPCSheetToStock: (sheet: import('../types').IPCInventorySheet) => { success: boolean; message: string };
+  // Embargo LDV management
+  embargoLDVs: EmbargoLDV[];
+  addEmbargoLDV: (data: {
+    nazione: string;
+    codiceLDV: string;
+    motivo?: string;
+    collocazione?: string;
+    note?: string;
+  }) => EmbargoLDV;
+  addBulkEmbargoLDVs: (
+    nazione: string,
+    codiciLDV: string[],
+    motivo?: string,
+    collocazione?: string,
+    note?: string
+  ) => number;
+  updateEmbargoLDV: (id: string, updates: Partial<EmbargoLDV>) => void;
+  deleteEmbargoLDV: (id: string) => void;
+  deleteEmbargoLDVsByCountry: (nazione: string) => void;
+  clearAllEmbargoLDVs: () => void;
   resetAllData: () => void;
   zeroAllData: () => void;
 }
@@ -147,6 +169,11 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [ipcSheets, setIpcSheets] = useState<IPCInventorySheet[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}ipcSheets`);
     return saved ? JSON.parse(saved) : initialIPCInventorySheets;
+  });
+
+  const [embargoLDVs, setEmbargoLDVs] = useState<EmbargoLDV[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}embargoLDVs`);
+    return saved ? JSON.parse(saved) : initialEmbargoLDVs;
   });
 
   const [settings, setSettings] = useState<AppSettings>(() => {
@@ -198,6 +225,10 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem(`${STORAGE_PREFIX}ipcSheets`, JSON.stringify(ipcSheets));
   }, [ipcSheets]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_PREFIX}embargoLDVs`, JSON.stringify(embargoLDVs));
+  }, [embargoLDVs]);
 
   // Compute stock metrics
   const metrics = useMemo<ComputedStockMetrics>(() => {
@@ -932,6 +963,84 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   };
 
+  const addEmbargoLDV = (data: {
+    nazione: string;
+    codiceLDV: string;
+    motivo?: string;
+    collocazione?: string;
+    note?: string;
+  }): EmbargoLDV => {
+    const newEntry: EmbargoLDV = {
+      id: `emb-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      nazione: data.nazione.trim(),
+      codiceLDV: data.codiceLDV.trim().toUpperCase(),
+      dataBlocco: new Date().toISOString().split('T')[0],
+      orarioBlocco: new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+      motivo: data.motivo?.trim() || 'Embargo merci / restrizioni doganali internazionali',
+      stato: 'BLOCCATO',
+      operatore: activeOperator,
+      collocazione: data.collocazione?.trim() || 'Gabbia Embargo',
+      note: data.note?.trim(),
+    };
+
+    setEmbargoLDVs(prev => [newEntry, ...prev]);
+    return newEntry;
+  };
+
+  const addBulkEmbargoLDVs = (
+    nazione: string,
+    codiciLDV: string[],
+    motivo?: string,
+    collocazione?: string,
+    note?: string
+  ): number => {
+    const cleanNation = nazione.trim();
+    const validCodes = codiciLDV
+      .map(c => c.trim().toUpperCase())
+      .filter(c => c.length > 0);
+
+    if (validCodes.length === 0 || !cleanNation) return 0;
+
+    const today = new Date().toISOString().split('T')[0];
+    const timeNow = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+    const newEntries: EmbargoLDV[] = validCodes.map((code, index) => ({
+      id: `emb-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 5)}`,
+      nazione: cleanNation,
+      codiceLDV: code,
+      dataBlocco: today,
+      orarioBlocco: timeNow,
+      motivo: motivo?.trim() || 'Embargo merci / restrizioni doganali internazionali',
+      stato: 'BLOCCATO',
+      operatore: activeOperator,
+      collocazione: collocazione?.trim() || 'Gabbia Embargo',
+      note: note?.trim(),
+    }));
+
+    setEmbargoLDVs(prev => [...newEntries, ...prev]);
+    return newEntries.length;
+  };
+
+  const updateEmbargoLDV = (id: string, updates: Partial<EmbargoLDV>) => {
+    setEmbargoLDVs(prev =>
+      prev.map(item => (item.id === id ? { ...item, ...updates } : item))
+    );
+  };
+
+  const deleteEmbargoLDV = (id: string) => {
+    setEmbargoLDVs(prev => prev.filter(item => item.id !== id));
+  };
+
+  const deleteEmbargoLDVsByCountry = (nazione: string) => {
+    setEmbargoLDVs(prev =>
+      prev.filter(item => item.nazione.toLowerCase() !== nazione.toLowerCase())
+    );
+  };
+
+  const clearAllEmbargoLDVs = () => {
+    setEmbargoLDVs([]);
+  };
+
   const resetAllData = () => {
     setStock(initialComponentStock);
     setPiles(initialPiles);
@@ -941,6 +1050,7 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setMovements(initialMovements);
     setSettings(initialSettings);
     setIpcSheets(initialIPCInventorySheets);
+    setEmbargoLDVs(initialEmbargoLDVs);
   };
 
   const zeroAllData = () => {
@@ -959,6 +1069,7 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setWorkOrders([]);
     setDamageReports([]);
     setIpcSheets([]);
+    setEmbargoLDVs([]);
     addMovement(
       'RETTIFICA',
       0,
@@ -1004,6 +1115,13 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         saveIPCSheet,
         deleteIPCSheet,
         applyIPCSheetToStock,
+        embargoLDVs,
+        addEmbargoLDV,
+        addBulkEmbargoLDVs,
+        updateEmbargoLDV,
+        deleteEmbargoLDV,
+        deleteEmbargoLDVsByCountry,
+        clearAllEmbargoLDVs,
         resetAllData,
         zeroAllData,
       }}

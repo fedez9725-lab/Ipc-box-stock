@@ -5,6 +5,7 @@ import { Navbar } from './components/layout/Navbar';
 import { DashboardView } from './components/dashboard/DashboardView';
 import { StockView } from './components/stock/StockView';
 import { IPCInventoryView } from './components/ipc/IPCInventoryView';
+import { EmbargoView } from './components/embargo/EmbargoView';
 import { PilesView } from './components/piles/PilesView';
 import { OrdersView } from './components/orders/OrdersView';
 import { WorkOrdersView } from './components/workorders/WorkOrdersView';
@@ -45,6 +46,7 @@ export default function App() {
           {/* Top Navbar */}
           <Navbar
             currentTab={currentTab}
+            setCurrentTab={setCurrentTab}
             setMobileOpen={setMobileOpen}
             openModal={openModal}
           />
@@ -56,6 +58,7 @@ export default function App() {
             )}
             {currentTab === 'stock' && <StockView openModal={openModal} />}
             {currentTab === 'ipc-sheet' && <IPCInventoryView />}
+            {currentTab === 'embargo' && <EmbargoView />}
             {currentTab === 'piles' && <PilesView />}
             {currentTab === 'orders' && <OrdersView openModal={openModal} />}
             {currentTab === 'workorders' && <WorkOrdersView openModal={openModal} />}

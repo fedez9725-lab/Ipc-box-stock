@@ -10,29 +10,39 @@ import {
   PackageCheck,
   RotateCcw,
   Trash2,
+  AlertOctagon,
+  Layers,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { TabType } from './Sidebar';
 
 interface NavbarProps {
   currentTab: TabType;
+  setCurrentTab: (tab: TabType) => void;
   setMobileOpen: (open: boolean) => void;
   openModal: (modal: 'reception' | 'usage' | 'damage' | 'recovery' | 'adjust' | 'zero') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
+  setCurrentTab,
   setMobileOpen,
   openModal,
 }) => {
-  const { metrics, settings, activeOperator, setActiveOperator } = useStock();
+  const { metrics, settings, activeOperator, setActiveOperator, embargoLDVs } = useStock();
+
+  const blockedLDVsCount = embargoLDVs.filter(l => l.stato === 'BLOCCATO').length;
 
   const getTabTitle = (tab: TabType) => {
     switch (tab) {
       case 'dashboard':
-        return 'Dashboard Panoramica';
+        return 'Dashboard Panoramica IPC';
       case 'stock':
         return 'Gestione Stock & Componenti IPC';
+      case 'ipc-sheet':
+        return 'Scheda Inventario Ufficiale IPC';
+      case 'embargo':
+        return 'Registro LDV Bloccate per Embargo';
       case 'piles':
         return 'Mappa Pile Magazzino (Max 7 BOX)';
       case 'orders':
@@ -77,10 +87,34 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Side: Quick Action Buttons & Operator */}
         <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+          {/* DEDICATED TOP BUTTON: REGISTRO EMBARGO (Separated Extra Module) */}
+          <button
+            id="top-nav-embargo-btn"
+            onClick={() => setCurrentTab(currentTab === 'embargo' ? 'dashboard' : 'embargo')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer shadow-2xs ${
+              currentTab === 'embargo'
+                ? 'bg-rose-700 text-white shadow-sm ring-2 ring-rose-400/40'
+                : 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300'
+            }`}
+            title="Accedi al Registro Giornaliero Lettere di Vettura (LDV) Bloccate per Embargo"
+          >
+            <AlertOctagon className={`w-3.5 h-3.5 ${currentTab === 'embargo' ? 'text-white' : 'text-rose-600'}`} />
+            <span>Registro Embargo</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
+                currentTab === 'embargo' ? 'bg-white text-rose-800' : 'bg-rose-600 text-white'
+              }`}
+            >
+              {embargoLDVs.length}
+            </span>
+          </button>
+
+          <div className="h-5 w-px bg-slate-200 hidden md:block" />
+
           {/* Quick Stock Indicator Badge */}
           <div
             id="navbar-stock-indicator"
-            className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold ${
+            className={`hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold ${
               metrics.statoScorta === 'VERDE'
                 ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                 : metrics.statoScorta === 'GIALLO'
@@ -98,7 +132,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             />
             <span>
-              <strong>{metrics.boxUtilizzabili}</strong> BOX Utilizzabili
+              <strong>{metrics.boxUtilizzabili}</strong> BOX IPC
             </span>
             <span className="text-slate-400">|</span>
             <span className="font-normal text-slate-600">
