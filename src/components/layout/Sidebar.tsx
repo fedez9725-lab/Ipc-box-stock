@@ -129,7 +129,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               IPC
             </div>
             <div>
-              <h1 className="font-bold text-white text-base tracking-tight leading-tight">IPC BOX Hub</h1>
+              <h1 className="font-bold text-white text-base tracking-tight leading-tight">Gestionale IPC BOX</h1>
               <p className="text-xs text-slate-400 font-mono flex items-center gap-1.5">
                 <span
                   className={`inline-block w-2 h-2 rounded-full ${
