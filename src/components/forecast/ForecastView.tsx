@@ -95,8 +95,12 @@ export const ForecastView: React.FC<ForecastViewProps> = ({ setCurrentTab }) => 
               <input
                 type="number"
                 min="0"
-                value={neededBoxes}
-                onChange={e => setNeededBoxes(Math.max(0, parseInt(e.target.value) || 0))}
+                placeholder="0"
+                value={neededBoxes === 0 ? '' : neededBoxes}
+                onFocus={e => e.target.select()}
+                onChange={e =>
+                  setNeededBoxes(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                }
                 className="w-full text-xl font-black text-slate-900 bg-white rounded-xl border border-slate-300 p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
@@ -113,8 +117,12 @@ export const ForecastView: React.FC<ForecastViewProps> = ({ setCurrentTab }) => 
               <input
                 type="number"
                 min="0"
-                value={safetyStockBuffer}
-                onChange={e => setSafetyStockBuffer(Math.max(0, parseInt(e.target.value) || 0))}
+                placeholder="0"
+                value={safetyStockBuffer === 0 ? '' : safetyStockBuffer}
+                onFocus={e => e.target.select()}
+                onChange={e =>
+                  setSafetyStockBuffer(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                }
                 className="w-full text-xl font-black text-slate-900 bg-white rounded-xl border border-slate-300 p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>

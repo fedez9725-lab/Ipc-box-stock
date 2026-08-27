@@ -136,8 +136,12 @@ export const SettingsView: React.FC = () => {
                 type="number"
                 min="1"
                 required
-                value={minStock}
-                onChange={e => setMinStock(Math.max(1, parseInt(e.target.value) || 1))}
+                placeholder="0"
+                value={minStock === 0 ? '' : minStock}
+                onFocus={e => e.target.select()}
+                onChange={e =>
+                  setMinStock(e.target.value === '' ? 0 : Math.max(1, parseInt(e.target.value, 10) || 1))
+                }
                 className="w-full text-sm font-bold text-rose-900 rounded-lg border border-rose-300 p-2.5 focus:ring-2 focus:ring-rose-500"
               />
               <span className="text-[10px] text-slate-500">Sotto questo valore scatta l'allerta rossa</span>
@@ -151,8 +155,12 @@ export const SettingsView: React.FC = () => {
                 type="number"
                 min="1"
                 required
-                value={warnStock}
-                onChange={e => setWarnStock(Math.max(1, parseInt(e.target.value) || 1))}
+                placeholder="0"
+                value={warnStock === 0 ? '' : warnStock}
+                onFocus={e => e.target.select()}
+                onChange={e =>
+                  setWarnStock(e.target.value === '' ? 0 : Math.max(1, parseInt(e.target.value, 10) || 1))
+                }
                 className="w-full text-sm font-bold text-amber-900 rounded-lg border border-amber-300 p-2.5 focus:ring-2 focus:ring-amber-500"
               />
               <span className="text-[10px] text-slate-500">Avviso giallo pre-esaurimento</span>
@@ -167,8 +175,16 @@ export const SettingsView: React.FC = () => {
                 min="1"
                 max="7"
                 required
-                value={maxPerPila}
-                onChange={e => setMaxPerPila(Math.min(7, Math.max(1, parseInt(e.target.value) || 7)))}
+                placeholder="7"
+                value={maxPerPila === 0 ? '' : maxPerPila}
+                onFocus={e => e.target.select()}
+                onChange={e =>
+                  setMaxPerPila(
+                    e.target.value === ''
+                      ? 0
+                      : Math.min(7, Math.max(1, parseInt(e.target.value, 10) || 7))
+                  )
+                }
                 className="w-full text-sm font-bold text-slate-900 rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-blue-500"
               />
               <span className="text-[10px] text-slate-500">Massimo 7 per sicurezza fisica</span>
@@ -182,8 +198,12 @@ export const SettingsView: React.FC = () => {
                 type="number"
                 min="0"
                 required
-                value={safetyBuffer}
-                onChange={e => setSafetyBuffer(Math.max(0, parseInt(e.target.value) || 0))}
+                placeholder="0"
+                value={safetyBuffer === 0 ? '' : safetyBuffer}
+                onFocus={e => e.target.select()}
+                onChange={e =>
+                  setSafetyBuffer(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                }
                 className="w-full text-sm font-bold text-slate-900 rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-blue-500"
               />
               <span className="text-[10px] text-slate-500">Cuscinetto buffer di default</span>

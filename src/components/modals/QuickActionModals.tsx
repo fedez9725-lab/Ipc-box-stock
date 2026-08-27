@@ -249,8 +249,12 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                 <input
                   type="number"
                   min="0"
-                  value={recBollaQty}
-                  onChange={e => setRecBollaQty(Math.max(0, parseInt(e.target.value) || 0))}
+                  placeholder="0"
+                  value={recBollaQty === 0 ? '' : recBollaQty}
+                  onFocus={e => e.target.select()}
+                  onChange={e =>
+                    setRecBollaQty(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                  }
                   className="w-full text-sm rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
@@ -276,8 +280,12 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                   <input
                     type="number"
                     min="0"
-                    value={recIntegri}
-                    onChange={e => setRecIntegri(Math.max(0, parseInt(e.target.value) || 0))}
+                    placeholder="0"
+                    value={recIntegri === 0 ? '' : recIntegri}
+                    onFocus={e => e.target.select()}
+                    onChange={e =>
+                      setRecIntegri(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                    }
                     className="w-full text-sm font-bold text-emerald-700 bg-white border border-emerald-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                   <span className="text-[10px] text-slate-500">1 Base integra + 1 Coperchio integro</span>
@@ -288,8 +296,12 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                   <input
                     type="number"
                     min="0"
-                    value={recDanneggiati}
-                    onChange={e => setRecDanneggiati(Math.max(0, parseInt(e.target.value) || 0))}
+                    placeholder="0"
+                    value={recDanneggiati === 0 ? '' : recDanneggiati}
+                    onFocus={e => e.target.select()}
+                    onChange={e =>
+                      setRecDanneggiati(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                    }
                     className="w-full text-sm font-semibold text-rose-700 bg-white border border-rose-300 rounded-lg p-2 focus:ring-2 focus:ring-rose-500 focus:outline-none"
                   />
                   <span className="text-[10px] text-slate-500">Struttura o ganci rotti</span>
@@ -300,8 +312,12 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                   <input
                     type="number"
                     min="0"
-                    value={recBasiRotte}
-                    onChange={e => setRecBasiRotte(Math.max(0, parseInt(e.target.value) || 0))}
+                    placeholder="0"
+                    value={recBasiRotte === 0 ? '' : recBasiRotte}
+                    onFocus={e => e.target.select()}
+                    onChange={e =>
+                      setRecBasiRotte(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                    }
                     className="w-full text-sm bg-white border border-amber-300 rounded-lg p-2 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                   <span className="text-[10px] text-slate-500">Basi lesionate</span>
@@ -312,8 +328,12 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                   <input
                     type="number"
                     min="0"
-                    value={recCoperchiRotti}
-                    onChange={e => setRecCoperchiRotti(Math.max(0, parseInt(e.target.value) || 0))}
+                    placeholder="0"
+                    value={recCoperchiRotti === 0 ? '' : recCoperchiRotti}
+                    onFocus={e => e.target.select()}
+                    onChange={e =>
+                      setRecCoperchiRotti(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                    }
                     className="w-full text-sm bg-white border border-amber-300 rounded-lg p-2 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                   <span className="text-[10px] text-slate-500">Coperchi fessurati</span>
@@ -324,8 +344,12 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                   <input
                     type="number"
                     min="0"
-                    value={recBasiMancanti}
-                    onChange={e => setRecBasiMancanti(Math.max(0, parseInt(e.target.value) || 0))}
+                    placeholder="0"
+                    value={recBasiMancanti === 0 ? '' : recBasiMancanti}
+                    onFocus={e => e.target.select()}
+                    onChange={e =>
+                      setRecBasiMancanti(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                    }
                     className="w-full text-sm bg-white border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                   />
                   <span className="text-[10px] text-slate-500">Solo coperchio consegnato</span>
@@ -336,8 +360,12 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                   <input
                     type="number"
                     min="0"
-                    value={recCoperchiMancanti}
-                    onChange={e => setRecCoperchiMancanti(Math.max(0, parseInt(e.target.value) || 0))}
+                    placeholder="0"
+                    value={recCoperchiMancanti === 0 ? '' : recCoperchiMancanti}
+                    onFocus={e => e.target.select()}
+                    onChange={e =>
+                      setRecCoperchiMancanti(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                    }
                     className="w-full text-sm bg-white border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                   />
                   <span className="text-[10px] text-slate-500">Solo base consegnata</span>
@@ -435,10 +463,13 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                 type="number"
                 min="1"
                 max={metrics.boxUtilizzabili}
-                value={useQty}
-                onChange={e => setUseQty(Math.max(1, parseInt(e.target.value) || 0))}
+                placeholder="0"
+                value={useQty === 0 ? '' : useQty}
+                onFocus={e => e.target.select()}
+                onChange={e =>
+                  setUseQty(e.target.value === '' ? 0 : Math.max(1, parseInt(e.target.value, 10) || 0))
+                }
                 className="w-full text-lg font-bold text-slate-900 rounded-xl border border-slate-300 p-3.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none bg-slate-50 focus:bg-white"
-                placeholder="Inserisci numero box..."
                 autoFocus
               />
               <p className="text-xs text-slate-500 mt-1.5">
@@ -536,8 +567,12 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                 <input
                   type="number"
                   min="1"
-                  value={damQty}
-                  onChange={e => setDamQty(Math.max(1, parseInt(e.target.value) || 0))}
+                  placeholder="0"
+                  value={damQty === 0 ? '' : damQty}
+                  onFocus={e => e.target.select()}
+                  onChange={e =>
+                    setDamQty(e.target.value === '' ? 0 : Math.max(1, parseInt(e.target.value, 10) || 0))
+                  }
                   className="w-full text-sm font-bold text-rose-800 rounded-lg border border-rose-300 p-2.5 focus:ring-2 focus:ring-rose-500 focus:outline-none"
                 />
               </div>
@@ -654,8 +689,12 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                 <input
                   type="number"
                   min="1"
-                  value={recovQty}
-                  onChange={e => setRecovQty(Math.max(1, parseInt(e.target.value) || 0))}
+                  placeholder="0"
+                  value={recovQty === 0 ? '' : recovQty}
+                  onFocus={e => e.target.select()}
+                  onChange={e =>
+                    setRecovQty(e.target.value === '' ? 0 : Math.max(1, parseInt(e.target.value, 10) || 0))
+                  }
                   className="w-full text-sm font-bold text-emerald-800 rounded-lg border border-emerald-300 p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
               </div>
@@ -704,8 +743,12 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                 <input
                   type="number"
                   min="0"
-                  value={adjBasiInt}
-                  onChange={e => setAdjBasiInt(Math.max(0, parseInt(e.target.value) || 0))}
+                  placeholder="0"
+                  value={adjBasiInt === 0 ? '' : adjBasiInt}
+                  onFocus={e => e.target.select()}
+                  onChange={e =>
+                    setAdjBasiInt(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                  }
                   className="w-full text-sm font-bold text-slate-900 rounded-lg border border-slate-300 p-2 focus:ring-2 focus:ring-purple-500"
                 />
               </div>
@@ -715,8 +758,12 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                 <input
                   type="number"
                   min="0"
-                  value={adjCopInt}
-                  onChange={e => setAdjCopInt(Math.max(0, parseInt(e.target.value) || 0))}
+                  placeholder="0"
+                  value={adjCopInt === 0 ? '' : adjCopInt}
+                  onFocus={e => e.target.select()}
+                  onChange={e =>
+                    setAdjCopInt(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                  }
                   className="w-full text-sm font-bold text-slate-900 rounded-lg border border-slate-300 p-2 focus:ring-2 focus:ring-purple-500"
                 />
               </div>
@@ -726,8 +773,12 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                 <input
                   type="number"
                   min="0"
-                  value={adjBasiRot}
-                  onChange={e => setAdjBasiRot(Math.max(0, parseInt(e.target.value) || 0))}
+                  placeholder="0"
+                  value={adjBasiRot === 0 ? '' : adjBasiRot}
+                  onFocus={e => e.target.select()}
+                  onChange={e =>
+                    setAdjBasiRot(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                  }
                   className="w-full text-sm font-bold text-rose-700 rounded-lg border border-slate-300 p-2 focus:ring-2 focus:ring-purple-500"
                 />
               </div>
@@ -737,8 +788,12 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                 <input
                   type="number"
                   min="0"
-                  value={adjCopRot}
-                  onChange={e => setAdjCopRot(Math.max(0, parseInt(e.target.value) || 0))}
+                  placeholder="0"
+                  value={adjCopRot === 0 ? '' : adjCopRot}
+                  onFocus={e => e.target.select()}
+                  onChange={e =>
+                    setAdjCopRot(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                  }
                   className="w-full text-sm font-bold text-rose-700 rounded-lg border border-slate-300 p-2 focus:ring-2 focus:ring-purple-500"
                 />
               </div>

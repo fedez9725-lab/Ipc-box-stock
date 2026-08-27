@@ -185,8 +185,12 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({ openModal }) => 
                   type="number"
                   min="1"
                   required
-                  value={newQty}
-                  onChange={e => setNewQty(Math.max(1, parseInt(e.target.value) || 0))}
+                  placeholder="0"
+                  value={newQty === 0 ? '' : newQty}
+                  onFocus={e => e.target.select()}
+                  onChange={e =>
+                    setNewQty(e.target.value === '' ? 0 : Math.max(1, parseInt(e.target.value, 10) || 0))
+                  }
                   className="w-full text-sm font-bold text-slate-900 rounded-lg border border-slate-300 p-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
                 <span className="text-[10px] text-slate-500">

@@ -572,8 +572,16 @@ export const IPCInventoryView: React.FC = () => {
                     <input
                       type="number"
                       min="0"
-                      value={row.giaImpilati}
-                      onChange={e => handleRowChange(row.id, 'giaImpilati', parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      value={row.giaImpilati === 0 ? '' : row.giaImpilati}
+                      onFocus={e => e.target.select()}
+                      onChange={e =>
+                        handleRowChange(
+                          row.id,
+                          'giaImpilati',
+                          e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0)
+                        )
+                      }
                       className="w-full text-xs font-bold text-center p-1.5 bg-transparent rounded focus:bg-white focus:ring-1 focus:ring-amber-500 focus:outline-none"
                     />
                   </td>
@@ -583,8 +591,16 @@ export const IPCInventoryView: React.FC = () => {
                     <input
                       type="number"
                       min="0"
-                      value={row.daImpilare}
-                      onChange={e => handleRowChange(row.id, 'daImpilare', parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      value={row.daImpilare === 0 ? '' : row.daImpilare}
+                      onFocus={e => e.target.select()}
+                      onChange={e =>
+                        handleRowChange(
+                          row.id,
+                          'daImpilare',
+                          e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0)
+                        )
+                      }
                       className="w-full text-xs font-bold text-center p-1.5 bg-transparent rounded focus:bg-white focus:ring-1 focus:ring-amber-500 focus:outline-none"
                     />
                   </td>
@@ -594,8 +610,16 @@ export const IPCInventoryView: React.FC = () => {
                     <input
                       type="number"
                       min="0"
-                      value={row.vuotiProduzione}
-                      onChange={e => handleRowChange(row.id, 'vuotiProduzione', parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      value={row.vuotiProduzione === 0 ? '' : row.vuotiProduzione}
+                      onFocus={e => e.target.select()}
+                      onChange={e =>
+                        handleRowChange(
+                          row.id,
+                          'vuotiProduzione',
+                          e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0)
+                        )
+                      }
                       className="w-full text-xs font-bold text-center p-1.5 bg-transparent rounded focus:bg-white focus:ring-1 focus:ring-amber-500 focus:outline-none"
                     />
                   </td>
@@ -605,8 +629,16 @@ export const IPCInventoryView: React.FC = () => {
                     <input
                       type="number"
                       min="0"
-                      value={row.pieniProduzione}
-                      onChange={e => handleRowChange(row.id, 'pieniProduzione', parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      value={row.pieniProduzione === 0 ? '' : row.pieniProduzione}
+                      onFocus={e => e.target.select()}
+                      onChange={e =>
+                        handleRowChange(
+                          row.id,
+                          'pieniProduzione',
+                          e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0)
+                        )
+                      }
                       className="w-full text-xs font-bold text-center p-1.5 bg-transparent rounded focus:bg-white focus:ring-1 focus:ring-amber-500 focus:outline-none"
                     />
                   </td>
@@ -616,8 +648,16 @@ export const IPCInventoryView: React.FC = () => {
                     <input
                       type="number"
                       min="0"
-                      value={row.danneggiatiRotti}
-                      onChange={e => handleRowChange(row.id, 'danneggiatiRotti', parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      value={row.danneggiatiRotti === 0 ? '' : row.danneggiatiRotti}
+                      onFocus={e => e.target.select()}
+                      onChange={e =>
+                        handleRowChange(
+                          row.id,
+                          'danneggiatiRotti',
+                          e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0)
+                        )
+                      }
                       className="w-full text-xs font-bold text-rose-700 text-center p-1.5 bg-transparent rounded focus:bg-white focus:ring-1 focus:ring-rose-500 focus:outline-none"
                     />
                   </td>
@@ -688,9 +728,14 @@ export const IPCInventoryView: React.FC = () => {
                     <input
                       type="number"
                       min="0"
-                      value={eccedenze.coperchi}
+                      placeholder="0"
+                      value={eccedenze.coperchi === 0 ? '' : eccedenze.coperchi}
+                      onFocus={e => e.target.select()}
                       onChange={e =>
-                        setEccedenze({ ...eccedenze, coperchi: parseInt(e.target.value) || 0 })
+                        setEccedenze({
+                          ...eccedenze,
+                          coperchi: e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0),
+                        })
                       }
                       className="w-full text-xs font-bold text-center p-1.5 bg-transparent rounded focus:bg-white focus:outline-none"
                     />
@@ -704,9 +749,14 @@ export const IPCInventoryView: React.FC = () => {
                     <input
                       type="number"
                       min="0"
-                      value={eccedenze.casse}
+                      placeholder="0"
+                      value={eccedenze.casse === 0 ? '' : eccedenze.casse}
+                      onFocus={e => e.target.select()}
                       onChange={e =>
-                        setEccedenze({ ...eccedenze, casse: parseInt(e.target.value) || 0 })
+                        setEccedenze({
+                          ...eccedenze,
+                          casse: e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0),
+                        })
                       }
                       className="w-full text-xs font-bold text-center p-1.5 bg-transparent rounded focus:bg-white focus:outline-none"
                     />
@@ -720,9 +770,14 @@ export const IPCInventoryView: React.FC = () => {
                     <input
                       type="number"
                       min="0"
-                      value={eccedenze.basi}
+                      placeholder="0"
+                      value={eccedenze.basi === 0 ? '' : eccedenze.basi}
+                      onFocus={e => e.target.select()}
                       onChange={e =>
-                        setEccedenze({ ...eccedenze, basi: parseInt(e.target.value) || 0 })
+                        setEccedenze({
+                          ...eccedenze,
+                          basi: e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0),
+                        })
                       }
                       className="w-full text-xs font-bold text-center p-1.5 bg-transparent rounded focus:bg-white focus:outline-none"
                     />
@@ -748,9 +803,14 @@ export const IPCInventoryView: React.FC = () => {
                     <input
                       type="number"
                       min="0"
-                      value={mancanti.coperchi}
+                      placeholder="0"
+                      value={mancanti.coperchi === 0 ? '' : mancanti.coperchi}
+                      onFocus={e => e.target.select()}
                       onChange={e =>
-                        setMancanti({ ...mancanti, coperchi: parseInt(e.target.value) || 0 })
+                        setMancanti({
+                          ...mancanti,
+                          coperchi: e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0),
+                        })
                       }
                       className="w-full text-xs font-bold text-center p-1.5 bg-transparent rounded focus:bg-white focus:outline-none"
                     />
@@ -764,9 +824,14 @@ export const IPCInventoryView: React.FC = () => {
                     <input
                       type="number"
                       min="0"
-                      value={mancanti.casse}
+                      placeholder="0"
+                      value={mancanti.casse === 0 ? '' : mancanti.casse}
+                      onFocus={e => e.target.select()}
                       onChange={e =>
-                        setMancanti({ ...mancanti, casse: parseInt(e.target.value) || 0 })
+                        setMancanti({
+                          ...mancanti,
+                          casse: e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0),
+                        })
                       }
                       className="w-full text-xs font-bold text-center p-1.5 bg-transparent rounded focus:bg-white focus:outline-none"
                     />
@@ -780,9 +845,14 @@ export const IPCInventoryView: React.FC = () => {
                     <input
                       type="number"
                       min="0"
-                      value={mancanti.basi}
+                      placeholder="0"
+                      value={mancanti.basi === 0 ? '' : mancanti.basi}
+                      onFocus={e => e.target.select()}
                       onChange={e =>
-                        setMancanti({ ...mancanti, basi: parseInt(e.target.value) || 0 })
+                        setMancanti({
+                          ...mancanti,
+                          basi: e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0),
+                        })
                       }
                       className="w-full text-xs font-bold text-center p-1.5 bg-transparent rounded focus:bg-white focus:outline-none"
                     />
@@ -811,8 +881,12 @@ export const IPCInventoryView: React.FC = () => {
               <input
                 type="number"
                 min="0"
-                value={brokenBoxesCount}
-                onChange={e => setBrokenBoxesCount(parseInt(e.target.value) || 0)}
+                placeholder="0"
+                value={brokenBoxesCount === 0 ? '' : brokenBoxesCount}
+                onFocus={e => e.target.select()}
+                onChange={e =>
+                  setBrokenBoxesCount(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                }
                 className="w-24 text-center font-mono font-bold text-base bg-[#fef08a] border border-amber-300 rounded px-2 py-1.5 text-rose-900 focus:ring-2 focus:ring-rose-500 focus:outline-none"
               />
               <span className="text-xs text-rose-700 font-semibold">Pallet Box rotti</span>
