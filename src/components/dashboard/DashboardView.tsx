@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Package,
   Layers,
-  Truck,
   AlertTriangle,
   CheckCircle2,
   TrendingUp,
@@ -12,11 +11,8 @@ import {
   RotateCcw,
   Sliders,
   Clock,
-  ArrowRight,
   ShieldCheck,
-  Zap,
   FileSpreadsheet,
-  Plane,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { TabType } from '../layout/Sidebar';
@@ -27,26 +23,7 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ setCurrentTab, openModal }) => {
-  const { stock, metrics, piles, orders, workOrders, movements, settings, routingErrors } = useStock();
-
-  // Routing errors aggregate
-  const totalRoutingErrors = routingErrors.length;
-  const totalShipmentsAffected = routingErrors.reduce((sum, e) => sum + e.numeroSpedizioni, 0);
-  const linToMxpCount = routingErrors.filter(e => e.destinazioneCorretta === 'LIN' && e.destinazioneErrata === 'MXP').length;
-  const mxpToLinCount = routingErrors.filter(e => e.destinazioneCorretta === 'MXP' && e.destinazioneErrata === 'LIN').length;
-
-  // Orders aggregate
-  const activeOrders = orders.filter(o => o.stato === 'IN_ATTESA' || o.stato === 'PARZIALE');
-  const totalOrderedPending = activeOrders.reduce((sum, o) => sum + o.quantitaDaRicevere, 0);
-
-  // WorkOrders aggregate
-  const activeWorkOrders = workOrders.filter(w => w.stato === 'IN_CORSO' || w.stato === 'PIANIFICATA');
-  const totalWorkOrdersNeeded = activeWorkOrders.reduce(
-    (sum, w) => sum + Math.max(0, w.quantitaRichiesta - w.quantitaAssegnata),
-    0
-  );
-
-  const usableDiffWithWorkOrders = metrics.boxUtilizzabili - totalWorkOrdersNeeded;
+  const { stock, metrics, piles, movements, settings } = useStock();
 
   return (
     <div className="space-y-6">
@@ -220,189 +197,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setCurrentTab, ope
         </div>
       </div>
 
-      {/* DEDICATED ROUTING MONITORING BANNER (LIN <-> MXP) */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-2xl p-5 text-white border border-blue-800/60 shadow-md">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-blue-600/30 border border-blue-400/30 text-blue-300 flex items-center justify-center font-bold shrink-0">
-              <Plane className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-base text-white tracking-tight">
-                  Monitoraggio Errori Instradamento LIN ⇄ MXP
-                </h3>
-                <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-rose-500 text-white">
-                  {totalRoutingErrors} {totalRoutingErrors === 1 ? 'errore' : 'errori'}
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 mt-0.5">
-                Tracciamento colli deviati ({totalShipmentsAffected} colli) &bull; LIN ➔ MXP: <strong>{linToMxpCount}</strong> &bull; MXP ➔ LIN: <strong>{mxpToLinCount}</strong>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setCurrentTab('routing-errors')}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
-            >
-              <span>Gestione & Storico Errori</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. OPERATIONAL SUMMARY SECTION: ORDERS vs WORKORDERS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Orders In-Flight */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Truck className="w-4 h-4 text-blue-600" />
-              <h3 className="font-bold text-sm text-slate-900">Rifornimenti & Ordini Fornitori</h3>
-            </div>
-            <button
-              onClick={() => setCurrentTab('orders')}
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
-            >
-              Vedi Tutti ({orders.length}) &rarr;
-            </button>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3 text-center mb-4">
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-[10px] text-slate-500 uppercase block font-semibold">Ordinati</span>
-              <span className="text-lg font-bold text-slate-800">
-                {orders.reduce((acc, o) => acc + o.quantitaOrdinata, 0)}
-              </span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100">
-              <span className="text-[10px] text-emerald-700 uppercase block font-semibold">Ricevuti</span>
-              <span className="text-lg font-bold text-emerald-700">
-                {orders.reduce((acc, o) => acc + o.quantitaRicevuta, 0)}
-              </span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-100">
-              <span className="text-[10px] text-blue-700 uppercase block font-semibold">In Arrivo</span>
-              <span className="text-lg font-bold text-blue-700">{totalOrderedPending}</span>
-            </div>
-          </div>
-
-          {activeOrders.length > 0 ? (
-            <div className="space-y-2">
-              {activeOrders.slice(0, 2).map(ord => (
-                <div
-                  key={ord.id}
-                  className="p-3 rounded-xl border border-slate-100 bg-slate-50/50 flex items-center justify-between text-xs"
-                >
-                  <div>
-                    <span className="font-bold text-slate-900">{ord.codiceOrdine}</span>
-                    <span className="text-slate-500 block">{ord.fornitore}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-semibold text-blue-700 block">
-                      {ord.quantitaDaRicevere} BOX da ricevere
-                    </span>
-                    <button
-                      onClick={() => openModal('reception')}
-                      className="text-[11px] text-slate-600 hover:text-blue-600 underline font-medium"
-                    >
-                      Ricevi Carico
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-slate-400 italic text-center py-3">Nessun ordine fornitore in attesa.</p>
-          )}
-        </div>
-
-        {/* Processing / Work Orders */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-amber-600" />
-              <h3 className="font-bold text-sm text-slate-900">Lavorazioni & Fabbisogno Linee</h3>
-            </div>
-            <button
-              onClick={() => setCurrentTab('workorders')}
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
-            >
-              Vedi Lavorazioni &rarr;
-            </button>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3 text-center mb-4">
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-[10px] text-slate-500 uppercase block font-semibold">Richiesti</span>
-              <span className="text-lg font-bold text-slate-800">
-                {workOrders.reduce((acc, w) => acc + w.quantitaRichiesta, 0)}
-              </span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100">
-              <span className="text-[10px] text-emerald-700 uppercase block font-semibold">Assegnati</span>
-              <span className="text-lg font-bold text-emerald-700">
-                {workOrders.reduce((acc, w) => acc + w.quantitaAssegnata, 0)}
-              </span>
-            </div>
-            <div
-              className={`p-2.5 rounded-xl border ${
-                usableDiffWithWorkOrders >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-200'
-              }`}
-            >
-              <span
-                className={`text-[10px] uppercase block font-semibold ${
-                  usableDiffWithWorkOrders >= 0 ? 'text-emerald-700' : 'text-red-700'
-                }`}
-              >
-                Bilancio Netto
-              </span>
-              <span
-                className={`text-lg font-bold ${
-                  usableDiffWithWorkOrders >= 0 ? 'text-emerald-700' : 'text-red-700'
-                }`}
-              >
-                {usableDiffWithWorkOrders >= 0 ? `+${usableDiffWithWorkOrders}` : usableDiffWithWorkOrders}
-              </span>
-            </div>
-          </div>
-
-          {activeWorkOrders.length > 0 ? (
-            <div className="space-y-2">
-              {activeWorkOrders.slice(0, 2).map(wo => (
-                <div
-                  key={wo.id}
-                  className="p-3 rounded-xl border border-slate-100 bg-slate-50/50 flex items-center justify-between text-xs"
-                >
-                  <div>
-                    <span className="font-bold text-slate-900">{wo.codice}</span>
-                    <span className="text-slate-500 block truncate max-w-[200px]">{wo.descrizione}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold text-slate-800 block">
-                      {wo.quantitaAssegnata} / {wo.quantitaRichiesta} BOX
-                    </span>
-                    <span
-                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                        wo.stato === 'IN_CORSO' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'
-                      }`}
-                    >
-                      {wo.stato}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-slate-400 italic text-center py-3">Tutte le lavorazioni sono completate.</p>
-          )}
-        </div>
-      </div>
-
-      {/* 3. PHYSICAL PILE STACKS VISUAL PREVIEW (MAX 7 PER PILA) */}
+      {/* 2. PHYSICAL PILE STACKS VISUAL PREVIEW (MAX 7 PER PILA) */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div>

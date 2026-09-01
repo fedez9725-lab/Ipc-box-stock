@@ -69,7 +69,6 @@ export const getWorkstationHealth = (ws: Workstation): {
   };
 
   let brokenCount = 0;
-  let problemCount = 0;
   let totalOk = 0;
   const brokenList: { key: keyof WorkstationHardware; label: string; detail?: string; status: HardwareStatus }[] = [];
 
@@ -77,31 +76,22 @@ export const getWorkstationHealth = (ws: Workstation): {
   keys.forEach(k => {
     const item = ws.hardware[k];
     if (!item) return;
-    if (item.status === 'GUASTO' || item.status === 'OFFLINE' || item.status === 'MANCANTE') {
+    if (item.status !== 'OK') {
       brokenCount++;
-      brokenList.push({ key: k, label: compLabels[k], detail: item.detail, status: item.status });
-    } else if (item.status === 'PROBLEMA') {
-      problemCount++;
-      brokenList.push({ key: k, label: compLabels[k], detail: item.detail, status: item.status });
+      brokenList.push({ key: k, label: compLabels[k], detail: '', status: 'GUASTO' });
     } else {
       totalOk++;
     }
   });
 
   let status: 'OPERATIVA' | 'ATTENZIONE' | 'FUORI_SERVIZIO' = 'OPERATIVA';
-  const criticalBroken =
-    ws.hardware.pcMonitor?.status === 'GUASTO' ||
-    ws.hardware.ilp?.status === 'GUASTO' ||
-    ws.hardware.pistola?.status === 'GUASTO' ||
-    ws.hardware.internet?.status === 'OFFLINE';
-
-  if (brokenCount >= 2 || criticalBroken) {
+  if (brokenCount >= 2) {
     status = 'FUORI_SERVIZIO';
-  } else if (brokenCount > 0 || problemCount > 0) {
+  } else if (brokenCount > 0) {
     status = 'ATTENZIONE';
   }
 
-  return { status, brokenCount, problemCount, totalOk, brokenList };
+  return { status, brokenCount, problemCount: 0, totalOk, brokenList };
 };
 
 export type WorkstationColorKey = 'BLU' | 'GIALLO' | 'VERDE';
@@ -372,102 +362,54 @@ export const WorkstationsView: React.FC = () => {
     name: string;
     icon: React.ElementType;
     description: string;
-    options: { status: HardwareStatus; label: string; color: string }[];
   }[] = [
     {
       key: 'pcMonitor',
       name: 'Computer / Monitor',
       icon: Monitor,
-      description: 'PC fisso, schermo principale, alimentazione e porte video',
-      options: [
-        { status: 'OK', label: 'Operativo (OK)', color: 'bg-emerald-500 text-white' },
-        { status: 'PROBLEMA', label: 'Lento / Schermo sfarfalla', color: 'bg-amber-500 text-white' },
-        { status: 'GUASTO', label: 'PC Spento / Guasto', color: 'bg-rose-600 text-white' },
-        { status: 'MANCANTE', label: 'Mancante', color: 'bg-slate-600 text-white' },
-      ],
+      description: 'PC fisso e schermo operativi',
     },
     {
       key: 'pistola',
       name: 'Pistola Scanner Barcode',
       icon: ScanLine,
-      description: 'Lettore barcode laser USB/Wireless per scansione colli e LDV',
-      options: [
-        { status: 'OK', label: 'Lettura OK', color: 'bg-emerald-500 text-white' },
-        { status: 'PROBLEMA', label: 'Batteria / Scansione lenta', color: 'bg-amber-500 text-white' },
-        { status: 'GUASTO', label: 'Laser Guasto / Non legge', color: 'bg-rose-600 text-white' },
-        { status: 'OFFLINE', label: 'Non connessa', color: 'bg-orange-500 text-white' },
-      ],
+      description: 'Lettore barcode laser per scansione colli',
     },
     {
       key: 'stampanteTermica',
       name: 'Stampante Termica (Etichette/LDV)',
       icon: Printer,
-      description: 'Stampa etichette barcode, rotolo termico e adesivi pacco',
-      options: [
-        { status: 'OK', label: 'Online (OK)', color: 'bg-emerald-500 text-white' },
-        { status: 'PROBLEMA', label: 'Carta inceppata / Senza rotolo', color: 'bg-amber-500 text-white' },
-        { status: 'GUASTO', label: 'Testina rotta / Guasta', color: 'bg-rose-600 text-white' },
-        { status: 'OFFLINE', label: 'Offline / Spenta', color: 'bg-slate-600 text-white' },
-      ],
+      description: 'Stampa etichette e adesivi barcode',
     },
     {
       key: 'stampanteDocumenti',
       name: 'Stampante Documenti (Bolle A4)',
       icon: FileText,
-      description: 'Stampa fogli di viaggio A4, bolle doganali e distinte',
-      options: [
-        { status: 'OK', label: 'Pronta (OK)', color: 'bg-emerald-500 text-white' },
-        { status: 'PROBLEMA', label: 'Toner quasi esaurito / Inceppata', color: 'bg-amber-500 text-white' },
-        { status: 'GUASTO', label: 'Guasto Hardware', color: 'bg-rose-600 text-white' },
-        { status: 'OFFLINE', label: 'Disconnessa', color: 'bg-slate-600 text-white' },
-      ],
+      description: 'Stampa bolle doganali e fogli A4',
     },
     {
       key: 'mouse',
       name: 'Mouse',
       icon: Mouse,
-      description: 'Mouse ottico USB/Wireless ergonomico',
-      options: [
-        { status: 'OK', label: 'Funzionante (OK)', color: 'bg-emerald-500 text-white' },
-        { status: 'PROBLEMA', label: 'Tasto difettoso / Cursore scatta', color: 'bg-amber-500 text-white' },
-        { status: 'GUASTO', label: 'Non funzionante', color: 'bg-rose-600 text-white' },
-        { status: 'MANCANTE', label: 'Mancante', color: 'bg-slate-600 text-white' },
-      ],
+      description: 'Mouse ottico di puntamento',
     },
     {
       key: 'tastiera',
       name: 'Tastiera',
       icon: Keyboard,
-      description: 'Tastiera estesa USB per immissione dati veloci',
-      options: [
-        { status: 'OK', label: 'Tasti OK', color: 'bg-emerald-500 text-white' },
-        { status: 'PROBLEMA', label: 'Tasti bloccati / Sporca', color: 'bg-amber-500 text-white' },
-        { status: 'GUASTO', label: 'Non riconosciuta', color: 'bg-rose-600 text-white' },
-        { status: 'MANCANTE', label: 'Mancante', color: 'bg-slate-600 text-white' },
-      ],
+      description: 'Tastiera di immissione dati',
     },
     {
       key: 'internet',
       name: 'Rete / Connessione Internet',
       icon: Wifi,
-      description: 'Cavo di rete LAN Ethernet o segnale Wi-Fi Hub',
-      options: [
-        { status: 'OK', label: 'Connesso Gigabit (OK)', color: 'bg-emerald-500 text-white' },
-        { status: 'PROBLEMA', label: 'Latenza elevata / Instabile', color: 'bg-amber-500 text-white' },
-        { status: 'OFFLINE', label: 'Cavo scollegato / Offline', color: 'bg-rose-600 text-white' },
-      ],
+      description: 'Cavo di rete LAN o segnale Wi-Fi',
     },
     {
       key: 'ilp',
       name: 'Sistema / Piattaforma ILP',
       icon: Globe2,
-      description: 'Piattaforma software dispacci e tracciamento UPU',
-      options: [
-        { status: 'OK', label: 'Accesso Operativo (OK)', color: 'bg-emerald-500 text-white' },
-        { status: 'PROBLEMA', label: 'Sessione lenta / Errori timeout', color: 'bg-amber-500 text-white' },
-        { status: 'GUASTO', label: 'Errore Login / Blocco Totale', color: 'bg-rose-600 text-white' },
-        { status: 'OFFLINE', label: 'Servizio non raggiungibile', color: 'bg-slate-600 text-white' },
-      ],
+      description: 'Piattaforma software dispacci',
     },
   ];
 
@@ -1340,18 +1282,68 @@ export const WorkstationsView: React.FC = () => {
                 </div>
               </div>
 
+              {/* Malfunction Banner if any */}
+              {(() => {
+                const wsHealth = getWorkstationHealth(selectedWorkstation);
+                return wsHealth.brokenList.length > 0 ? (
+                  <div className="p-4 rounded-2xl bg-rose-600 text-white shadow-sm space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <XCircle className="w-5 h-5" />
+                        <span className="text-sm font-black uppercase tracking-wider">
+                          Componenti non funzionanti ({wsHealth.brokenList.length})
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          quickAuditWorkstation(selectedWorkstation.id, true);
+                          showToast(`${selectedWorkstation.codice}: Tutti i componenti ripristinati su OK`);
+                        }}
+                        className="px-3 py-1 bg-white text-rose-700 hover:bg-rose-50 text-xs font-black rounded-lg cursor-pointer transition-colors shadow-2xs"
+                      >
+                        Ripristina Tutto OK
+                      </button>
+                    </div>
+                    <div className="space-y-1">
+                      {wsHealth.brokenList.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between text-xs bg-rose-700/80 px-2.5 py-1 rounded-lg font-bold"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span>•</span>
+                            <span>{item.label} non funzionante</span>
+                          </div>
+                          <span className="text-[10px] uppercase px-1.5 py-0.5 bg-rose-900 rounded">
+                            {item.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Tutti i componenti hardware sono operativi al 100%</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* 8 Component Status Tiles */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                    Stato Singoli Componenti Hardware & Servizi
+                    Configurazione Stato Hardware & Servizi
                   </h4>
                   <span className="text-[11px] text-slate-500">
-                    Fai clic sul pulsante dello stato corrispondente per aggiornare
+                    Seleziona lo stato per contrassegnare componenti non funzionanti in rosso
                   </span>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {componentConfig.map(comp => {
                     const Icon = comp.icon;
                     const currentState = selectedWorkstation.hardware[comp.key] || { status: 'OK' };
@@ -1360,12 +1352,10 @@ export const WorkstationsView: React.FC = () => {
                     return (
                       <div
                         key={comp.key}
-                        className={`p-3.5 rounded-xl border transition-all ${
+                        className={`p-3 rounded-xl border transition-all ${
                           isOk
                             ? 'bg-slate-50/50 border-slate-200'
-                            : currentState.status === 'GUASTO'
-                            ? 'bg-rose-50/40 border-rose-300 ring-1 ring-rose-200'
-                            : 'bg-amber-50/40 border-amber-300 ring-1 ring-amber-200'
+                            : 'bg-rose-50 border-rose-300 ring-1 ring-rose-200'
                         }`}
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
@@ -1374,9 +1364,7 @@ export const WorkstationsView: React.FC = () => {
                               className={`p-2.5 rounded-xl border ${
                                 isOk
                                   ? 'bg-white text-slate-700 border-slate-200'
-                                  : currentState.status === 'GUASTO'
-                                  ? 'bg-rose-100 text-rose-700 border-rose-300'
-                                  : 'bg-amber-100 text-amber-700 border-amber-300'
+                                  : 'bg-rose-600 text-white border-rose-700 shadow-xs'
                               }`}
                             >
                               <Icon className="w-5 h-5" />
@@ -1385,48 +1373,63 @@ export const WorkstationsView: React.FC = () => {
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold text-slate-900">{comp.name}</span>
-                                {!isOk && (
-                                  <span className="px-2 py-0.2 rounded text-[10px] font-bold bg-rose-600 text-white">
-                                    {currentState.status}
+                                {!isOk ? (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-black bg-rose-600 text-white uppercase tracking-wider">
+                                    Non Funzionante
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                    Funzionante
                                   </span>
                                 )}
                               </div>
                               <p className="text-[11px] text-slate-500">{comp.description}</p>
-                              {currentState.detail && (
-                                <p className="text-[11px] font-semibold text-rose-700 mt-0.5">
-                                  Nota: {currentState.detail}
-                                </p>
-                              )}
                             </div>
                           </div>
 
-                          {/* Quick Selector Pills */}
-                          <div className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
-                            {comp.options.map(opt => {
-                              const isActive = currentState.status === opt.status;
-                              return (
-                                <button
-                                  key={opt.status}
-                                  type="button"
-                                  onClick={() => {
-                                    updateWorkstationComponent(
-                                      selectedWorkstation.id,
-                                      comp.key,
-                                      opt.status,
-                                      opt.status === 'OK' ? '' : currentState.detail
-                                    );
-                                    showToast(`${comp.name}: Impostato su ${opt.label}`);
-                                  }}
-                                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
-                                    isActive
-                                      ? `${opt.color} shadow-xs scale-105 ring-1 ring-black/10`
-                                      : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-                                  }`}
-                                >
-                                  {opt.label}
-                                </button>
-                              );
-                            })}
+                          {/* Direct Funzionante / Non Funzionante Selector */}
+                          <div className="flex items-center gap-1.5 sm:ml-auto">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                updateWorkstationComponent(
+                                  selectedWorkstation.id,
+                                  comp.key,
+                                  'OK',
+                                  ''
+                                );
+                                showToast(`${comp.name}: Funzionante`);
+                              }}
+                              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                                isOk
+                                  ? 'bg-emerald-600 text-white shadow-xs scale-102 ring-1 ring-emerald-700'
+                                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Funzionante</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                updateWorkstationComponent(
+                                  selectedWorkstation.id,
+                                  comp.key,
+                                  'GUASTO',
+                                  ''
+                                );
+                                showToast(`${comp.name}: Segnalato come Non Funzionante`);
+                              }}
+                              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                                !isOk
+                                  ? 'bg-rose-600 text-white shadow-xs scale-102 ring-1 ring-rose-700'
+                                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300'
+                              }`}
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                              <span>Non Funzionante</span>
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -1699,32 +1702,27 @@ const PlanimetricCard: React.FC<PlanimetricCardProps> = ({ ws, isSelected, onCli
         </div>
       </div>
 
-      {/* Footer Mini Hardware Matrix */}
-      <div className="flex items-center justify-center gap-1 pt-1.5 border-t border-black/10">
-        <Monitor
-          className={`w-3 h-3 ${
-            ws.hardware.pcMonitor?.status === 'OK' ? 'text-slate-700/60' : 'text-rose-600 font-bold'
-          }`}
-          title="PC / Monitor"
-        />
-        <ScanLine
-          className={`w-3 h-3 ${
-            ws.hardware.pistola?.status === 'OK' ? 'text-slate-700/60' : 'text-rose-600 font-bold'
-          }`}
-          title="Pistola Scanner"
-        />
-        <Printer
-          className={`w-3 h-3 ${
-            ws.hardware.stampanteTermica?.status === 'OK' ? 'text-slate-700/60' : 'text-amber-600'
-          }`}
-          title="Stampante Termica"
-        />
-        <Globe2
-          className={`w-3 h-3 ${
-            ws.hardware.ilp?.status === 'OK' ? 'text-slate-700/60' : 'text-rose-600'
-          }`}
-          title="ILP"
-        />
+      {/* Footer Malfunctions List / Hardware Alert */}
+      <div className="pt-1.5 border-t border-black/10">
+        {health.brokenList.length > 0 ? (
+          <div className="flex flex-col gap-1">
+            {health.brokenList.map((item, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-1 text-[10px] font-black text-white bg-rose-600 px-1.5 py-0.5 rounded shadow-2xs truncate"
+                title={`${item.label}: ${item.status}${item.detail ? ` - ${item.detail}` : ''}`}
+              >
+                <XCircle className="w-3 h-3 shrink-0" />
+                <span className="truncate">{item.label} non funzionante</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-emerald-800/80">
+            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+            <span>Tutto OK</span>
+          </div>
+        )}
       </div>
 
       {/* Assigned Operator Chip if active */}
@@ -1818,35 +1816,31 @@ const WorkstationCard: React.FC<WorkstationCardProps> = ({ ws, onClick, onQuickA
         )}
       </div>
 
-      {/* Component Status Mini Matrix */}
-      <div className="grid grid-cols-4 gap-1.5 mb-3 text-[10px] font-semibold">
-        {[
-          { label: 'PC', state: ws.hardware.pcMonitor },
-          { label: 'Pistola', state: ws.hardware.pistola },
-          { label: 'Termica', state: ws.hardware.stampanteTermica },
-          { label: 'Doc A4', state: ws.hardware.stampanteDocumenti },
-          { label: 'Mouse', state: ws.hardware.mouse },
-          { label: 'Tasti', state: ws.hardware.tastiera },
-          { label: 'Rete', state: ws.hardware.internet },
-          { label: 'ILP', state: ws.hardware.ilp },
-        ].map((item, i) => {
-          const isOk = item.state?.status === 'OK';
-          return (
-            <div
-              key={i}
-              className={`p-1.5 rounded-lg text-center border ${
-                isOk
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  : item.state?.status === 'GUASTO'
-                  ? 'bg-rose-100 text-rose-800 border-rose-300 font-bold'
-                  : 'bg-amber-100 text-amber-800 border-amber-300'
-              }`}
-            >
-              <div>{item.label}</div>
-              <div className="text-[9px] uppercase">{item.state?.status || 'OK'}</div>
-            </div>
-          );
-        })}
+      {/* ONLY DISPLAY NON-FUNCTIONAL / FAULTY ITEMS IN RED */}
+      <div className="mb-3">
+        {health.brokenList.length > 0 ? (
+          <div className="space-y-1.5">
+            {health.brokenList.map((item, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between p-2 rounded-xl bg-rose-600 text-white font-bold text-xs shadow-xs"
+              >
+                <div className="flex items-center gap-1.5 truncate">
+                  <XCircle className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{item.label} non funzionante</span>
+                </div>
+                <span className="text-[10px] uppercase font-black px-1.5 py-0.5 bg-rose-700/80 rounded shrink-0">
+                  {item.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>Tutti i componenti sono operativi</span>
+          </div>
+        )}
       </div>
 
       {/* Card Action footer */}
