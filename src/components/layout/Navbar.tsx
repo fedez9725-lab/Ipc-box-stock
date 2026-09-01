@@ -174,21 +174,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </div>
 
-          {/* Operator Switcher */}
-          <div className="hidden lg:flex items-center gap-2 bg-slate-100/90 px-2.5 py-1 rounded-lg border border-slate-200 text-xs">
-            <UserCheck className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-            <select
-              id="active-operator-select"
+          {/* Operator Switcher & Direct Input */}
+          <div className="hidden md:flex items-center gap-1.5 bg-slate-100/90 px-2.5 py-1 rounded-lg border border-slate-200 text-xs">
+            <UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <input
+              id="active-operator-input"
+              type="text"
+              list="navbar-operators-list"
               value={activeOperator}
               onChange={e => setActiveOperator(e.target.value)}
-              className="bg-transparent border-none text-slate-800 font-medium focus:ring-0 cursor-pointer text-xs pr-4 py-0.5 outline-none"
-            >
+              placeholder="Inserisci tuo nome..."
+              className="bg-transparent border-none text-slate-800 font-medium placeholder:text-slate-400 placeholder:font-normal focus:ring-0 text-xs py-0.5 outline-none w-36 lg:w-44"
+            />
+            <datalist id="navbar-operators-list">
               {settings.operatori.map(op => (
-                <option key={op} value={op}>
-                  {op}
-                </option>
+                <option key={op} value={op} />
               ))}
-            </select>
+            </datalist>
           </div>
 
           {/* Quick Action Trigger Buttons */}

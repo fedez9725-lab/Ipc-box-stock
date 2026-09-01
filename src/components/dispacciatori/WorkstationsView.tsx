@@ -1225,6 +1225,7 @@ export const WorkstationsView: React.FC = () => {
                   <div className="relative">
                     <input
                       type="text"
+                      list="ws-operators-list"
                       placeholder="Scrivi nome operatore di turno..."
                       value={editingOperator}
                       onChange={e => {
@@ -1234,6 +1235,11 @@ export const WorkstationsView: React.FC = () => {
                       }}
                       className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-hidden"
                     />
+                    <datalist id="ws-operators-list">
+                      {settings.operatori.map(op => (
+                        <option key={op} value={op} />
+                      ))}
+                    </datalist>
                   </div>
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     Inserisci o modifica liberamente il nome dell'operatore assegnato
@@ -1482,6 +1488,7 @@ export const WorkstationsView: React.FC = () => {
                 <label className="block text-xs font-bold text-slate-700 mb-1">Operatore Assegnato (Facoltativo)</label>
                 <input
                   type="text"
+                  list="ws-operators-list"
                   value={newWsOperator}
                   onChange={e => setNewWsOperator(e.target.value)}
                   placeholder="Scrivi nome operatore..."

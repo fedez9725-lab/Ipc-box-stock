@@ -301,40 +301,63 @@ export const SettingsView: React.FC = () => {
 
           {/* Operators */}
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-3">
-            <h4 className="text-xs font-bold text-slate-900 uppercase">Operatori & Responsabili Turno</h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold text-slate-900 uppercase">Operatori & Responsabili Turno</h4>
+              {operators.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setOperators([])}
+                  className="text-[11px] text-rose-600 hover:text-rose-700 hover:underline font-semibold"
+                >
+                  Svuota tutti
+                </button>
+              )}
+            </div>
 
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Nuovo operatore (es. Mario Verdi)"
+                placeholder="Inserisci nome operatore..."
                 value={newOperator}
                 onChange={e => setNewOperator(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddOperator();
+                  }
+                }}
                 className="flex-1 text-xs rounded-lg border border-slate-300 p-2 focus:ring-2 focus:ring-blue-500"
               />
               <button
                 type="button"
                 onClick={handleAddOperator}
-                className="px-3 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
+                className="px-3 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
+                <span>Aggiungi</span>
               </button>
             </div>
 
             <div className="space-y-1.5 max-h-48 overflow-y-auto">
-              {operators.map(op => (
-                <div key={op} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 text-xs text-slate-800">
-                  <span>{op}</span>
-                  {operators.length > 1 && (
+              {operators.length === 0 ? (
+                <p className="text-xs text-slate-400 italic py-2">
+                  Nessun operatore salvato. Puoi inserire i tuoi nominativi qui sopra oppure scriverli al momento.
+                </p>
+              ) : (
+                operators.map(op => (
+                  <div key={op} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 text-xs text-slate-800">
+                    <span className="font-medium">{op}</span>
                     <button
                       type="button"
                       onClick={() => handleRemoveOperator(op)}
-                      className="text-slate-400 hover:text-rose-600"
+                      className="text-slate-400 hover:text-rose-600 transition-colors p-1"
+                      title="Elimina operatore"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                  )}
-                </div>
-              ))}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

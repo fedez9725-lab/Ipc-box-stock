@@ -22,13 +22,14 @@ interface OrdersViewProps {
 }
 
 export const OrdersView: React.FC<OrdersViewProps> = ({ openModal }) => {
-  const { orders, createOrder, updateOrderStatus, deleteOrder, activeOperator } = useStock();
+  const { orders, createOrder, updateOrderStatus, deleteOrder, activeOperator, settings } = useStock();
 
   const [isCreatingOrder, setIsCreatingOrder] = useState<boolean>(false);
   const [newSupplier, setNewSupplier] = useState<string>('EuroPackaging Containers S.p.A.');
   const [newQty, setNewQty] = useState<number>(50);
   const [newDeliveryDate, setNewDeliveryDate] = useState<string>('2026-08-25');
   const [newNotes, setNewNotes] = useState<string>('Fornitura standard per incremento stock lavorazioni');
+  const [newOperator, setNewOperator] = useState<string>(activeOperator || '');
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<PurchaseOrder | null>(null);
@@ -42,6 +43,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ openModal }) => {
       quantitaOrdinata: Number(newQty),
       dataPrevista: newDeliveryDate,
       note: newNotes,
+      operatore: newOperator.trim() || undefined,
     });
 
     setIsCreatingOrder(false);
@@ -152,15 +154,34 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ openModal }) => {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Note & Riferimenti Acquisto</label>
-              <input
-                type="text"
-                value={newNotes}
-                onChange={e => setNewNotes(e.target.value)}
-                placeholder="Riferimento offerta commerciale, clausole ISO, ecc."
-                className="w-full text-sm rounded-lg border border-slate-300 p-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Operatore / Emesso Da</label>
+                <input
+                  type="text"
+                  list="orders-operators-list"
+                  placeholder="Inserisci nome operatore..."
+                  value={newOperator}
+                  onChange={e => setNewOperator(e.target.value)}
+                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+                <datalist id="orders-operators-list">
+                  {settings.operatori.map(op => (
+                    <option key={op} value={op} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Note & Riferimenti Acquisto</label>
+                <input
+                  type="text"
+                  value={newNotes}
+                  onChange={e => setNewNotes(e.target.value)}
+                  placeholder="Riferimento offerta commerciale, clausole ISO, ecc."
+                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">

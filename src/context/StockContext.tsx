@@ -92,6 +92,7 @@ interface StockContextType {
     quantitaOrdinata: number;
     dataPrevista?: string;
     note?: string;
+    operatore?: string;
   }) => PurchaseOrder;
   updateOrderStatus: (id: string, stato: PurchaseOrder['stato']) => void;
   deleteOrder: (id: string) => void;
@@ -103,6 +104,7 @@ interface StockContextType {
     quantitaRichiesta: number;
     dataScadenza?: string;
     note?: string;
+    operatore?: string;
   }) => WorkOrder;
   updateWorkOrderStatus: (id: string, stato: WorkOrder['stato']) => void;
   updateSettings: (newSettings: Partial<AppSettings>) => void;
@@ -133,6 +135,9 @@ interface StockContextType {
   deleteEmbargoLDV: (id: string) => void;
   deleteEmbargoLDVsByCountry: (nazione: string) => void;
   clearAllEmbargoLDVs: () => void;
+  addOperator: (name: string) => void;
+  removeOperator: (name: string) => void;
+  clearAllOperators: () => void;
   // Workstations Management
   workstations: Workstation[];
   workstationLogs: WorkstationLog[];
@@ -164,6 +169,36 @@ const StockContext = createContext<StockContextType | undefined>(undefined);
 
 const STORAGE_PREFIX = 'IPC_BOX_SYSTEM_';
 
+const LEGACY_MOCK_NAMES = [
+  'Giuseppe Ferrari',
+  'Laura Bianchi',
+  'Elena Conti',
+  'Davide Neri',
+  'Chiara Moretti',
+  'Federico Fontana',
+  'Paolo Rinaldi',
+  'Francesca Leone',
+  'Marco Rossi',
+  'Simone Gallo',
+  'Roberto Villa',
+  'Antonio Russo',
+  'Matteo Gatti',
+  'Mario Rossi',
+  'Mario Verdi',
+];
+
+const isLegacyMockName = (name?: string): boolean => {
+  if (!name || typeof name !== 'string') return false;
+  const trimmed = name.trim().toLowerCase();
+  if (!trimmed) return false;
+  return LEGACY_MOCK_NAMES.some(mock => trimmed.includes(mock.toLowerCase()));
+};
+
+const sanitizeName = (name?: string): string => {
+  if (!name) return '';
+  return isLegacyMockName(name) ? '' : name;
+};
+
 export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Load from local storage or fallback to initial data
   const [stock, setStock] = useState<ComponentStock>(() => {
@@ -178,22 +213,69 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [orders, setOrders] = useState<PurchaseOrder[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}orders`);
-    return saved ? JSON.parse(saved) : initialOrders;
+    if (saved) {
+      try {
+        const parsed: PurchaseOrder[] = JSON.parse(saved);
+        return parsed.map(o => ({
+          ...o,
+          ricezioni: (o.ricezioni || []).map(r => ({
+            ...r,
+            operatore: sanitizeName(r.operatore),
+          })),
+        }));
+      } catch (e) {
+        console.error('Error parsing orders:', e);
+      }
+    }
+    return initialOrders;
   });
 
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}workOrders`);
-    return saved ? JSON.parse(saved) : initialWorkOrders;
+    if (saved) {
+      try {
+        const parsed: WorkOrder[] = JSON.parse(saved);
+        return parsed.map(wo => ({
+          ...wo,
+          operatore: sanitizeName(wo.operatore),
+        }));
+      } catch (e) {
+        console.error('Error parsing workOrders:', e);
+      }
+    }
+    return initialWorkOrders;
   });
 
   const [damageReports, setDamageReports] = useState<DamageReport[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}damageReports`);
-    return saved ? JSON.parse(saved) : initialDamageReports;
+    if (saved) {
+      try {
+        const parsed: DamageReport[] = JSON.parse(saved);
+        return parsed.map(d => ({
+          ...d,
+          operatore: sanitizeName(d.operatore),
+        }));
+      } catch (e) {
+        console.error('Error parsing damageReports:', e);
+      }
+    }
+    return initialDamageReports;
   });
 
   const [movements, setMovements] = useState<StockMovement[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}movements`);
-    return saved ? JSON.parse(saved) : initialMovements;
+    if (saved) {
+      try {
+        const parsed: StockMovement[] = JSON.parse(saved);
+        return parsed.map(m => ({
+          ...m,
+          utente: sanitizeName(m.utente),
+        }));
+      } catch (e) {
+        console.error('Error parsing movements:', e);
+      }
+    }
+    return initialMovements;
   });
 
   const [ipcSheets, setIpcSheets] = useState<IPCInventorySheet[]>(() => {
@@ -211,26 +293,10 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (saved) {
       try {
         const parsed: Workstation[] = JSON.parse(saved);
-        // List of legacy mock demo names to clear out automatically
-        const legacyMockNames = [
-          'Giuseppe Ferrari',
-          'Laura Bianchi',
-          'Elena Conti',
-          'Davide Neri',
-          'Chiara Moretti',
-          'Federico Fontana',
-          'Paolo Rinaldi',
-          'Francesca Leone',
-          'Marco Rossi',
-          'Simone Gallo',
-          'Roberto Villa',
-          'Antonio Russo',
-          'Matteo Gatti',
-        ];
         return parsed.map(ws => ({
           ...ws,
-          operatore: legacyMockNames.includes(ws.operatore) ? '' : ws.operatore,
-          ultimoOperatore: legacyMockNames.includes(ws.ultimoOperatore) ? '' : ws.ultimoOperatore,
+          operatore: sanitizeName(ws.operatore),
+          ultimoOperatore: sanitizeName(ws.ultimoOperatore),
         }));
       } catch (e) {
         console.error('Error parsing workstations:', e);
@@ -241,27 +307,85 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [workstationLogs, setWorkstationLogs] = useState<WorkstationLog[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}workstationLogs`);
-    return saved ? JSON.parse(saved) : initialWorkstationLogs;
+    if (saved) {
+      try {
+        const parsed: WorkstationLog[] = JSON.parse(saved);
+        return parsed.map(l => ({
+          ...l,
+          operatore: sanitizeName(l.operatore),
+        }));
+      } catch (e) {
+        console.error('Error parsing workstationLogs:', e);
+      }
+    }
+    return initialWorkstationLogs;
   });
 
   const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}settings`);
     if (saved) {
-      const parsed = JSON.parse(saved);
-      // Ensure default zones are Magazzino and Capannone
-      if (!parsed.zoneDisponibili || parsed.zoneDisponibili.length > 2 || !parsed.zoneDisponibili.includes('Magazzino')) {
-        parsed.zoneDisponibili = ['Magazzino', 'Capannone'];
+      try {
+        const parsed = JSON.parse(saved);
+        if (!parsed.zoneDisponibili || parsed.zoneDisponibili.length > 2 || !parsed.zoneDisponibili.includes('Magazzino')) {
+          parsed.zoneDisponibili = ['Magazzino', 'Capannone'];
+        }
+        if (Array.isArray(parsed.operatori)) {
+          parsed.operatori = parsed.operatori.filter((op: string) => !isLegacyMockName(op));
+        } else {
+          parsed.operatori = [];
+        }
+        return parsed;
+      } catch (e) {
+        console.error('Error parsing settings:', e);
       }
-      return parsed;
     }
     return initialSettings;
   });
 
   const [activeOperator, setActiveOperator] = useState<string>(() => {
-    return settings.operatori[0] || 'Marco Rossi (Capoturno)';
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}activeOperator`);
+    if (saved && !isLegacyMockName(saved)) {
+      return saved;
+    }
+    return '';
   });
 
+  const addOperator = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setSettings(prev => {
+      if (prev.operatori.includes(trimmed)) return prev;
+      return {
+        ...prev,
+        operatori: [...prev.operatori, trimmed],
+      };
+    });
+    setActiveOperator(trimmed);
+  };
+
+  const removeOperator = (name: string) => {
+    setSettings(prev => ({
+      ...prev,
+      operatori: prev.operatori.filter(op => op !== name),
+    }));
+    if (activeOperator === name) {
+      const remaining = settings.operatori.filter(op => op !== name);
+      setActiveOperator(remaining[0] || '');
+    }
+  };
+
+  const clearAllOperators = () => {
+    setSettings(prev => ({
+      ...prev,
+      operatori: [],
+    }));
+    setActiveOperator('');
+  };
+
   // Sync to local storage
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_PREFIX}activeOperator`, activeOperator);
+  }, [activeOperator]);
   useEffect(() => {
     localStorage.setItem(`${STORAGE_PREFIX}stock`, JSON.stringify(stock));
   }, [stock]);
@@ -913,6 +1037,7 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     quantitaRichiesta: number;
     dataScadenza?: string;
     note?: string;
+    operatore?: string;
   }) => {
     const newWo: WorkOrder = {
       id: `wo-${Date.now()}`,
@@ -925,7 +1050,7 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       quantitaRichiesta: data.quantitaRichiesta,
       quantitaAssegnata: 0,
       stato: 'PIANIFICATA',
-      operatore: activeOperator,
+      operatore: data.operatore || activeOperator,
       note: data.note,
     };
 
@@ -1367,6 +1492,9 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deleteEmbargoLDV,
         deleteEmbargoLDVsByCountry,
         clearAllEmbargoLDVs,
+        addOperator,
+        removeOperator,
+        clearAllOperators,
         workstations,
         workstationLogs,
         updateWorkstationComponent,

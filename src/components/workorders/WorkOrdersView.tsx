@@ -21,7 +21,7 @@ interface WorkOrdersViewProps {
 }
 
 export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({ openModal }) => {
-  const { workOrders, metrics, createWorkOrder, updateWorkOrderStatus, recordUsage, activeOperator } = useStock();
+  const { workOrders, metrics, createWorkOrder, updateWorkOrderStatus, recordUsage, activeOperator, settings } = useStock();
 
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [newCode, setNewCode] = useState<string>(`LAV-INT-2026-${workOrders.length + 120}`);
@@ -31,6 +31,7 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({ openModal }) => 
   const [newQty, setNewQty] = useState<number>(21);
   const [newDeadline, setNewDeadline] = useState<string>('2026-08-20');
   const [newNotes, setNewNotes] = useState<string>('');
+  const [newOperator, setNewOperator] = useState<string>(activeOperator || '');
 
   const [searchTerm, setSearchTerm] = useState<string>('');
 
@@ -46,6 +47,7 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({ openModal }) => 
       quantitaRichiesta: Number(newQty),
       dataScadenza: newDeadline,
       note: newNotes,
+      operatore: newOperator.trim() || undefined,
     });
 
     setIsCreating(false);
@@ -204,6 +206,36 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({ openModal }) => 
                   type="date"
                   value={newDeadline}
                   onChange={e => setNewDeadline(e.target.value)}
+                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Operatore / Responsabile</label>
+                <input
+                  type="text"
+                  list="wo-operators-list"
+                  placeholder="Inserisci nome operatore..."
+                  value={newOperator}
+                  onChange={e => setNewOperator(e.target.value)}
+                  className="w-full text-sm rounded-lg border border-slate-300 p-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+                <datalist id="wo-operators-list">
+                  {settings.operatori.map(op => (
+                    <option key={op} value={op} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Note Lavorazione (Opzionali)</label>
+                <input
+                  type="text"
+                  placeholder="Es. Pallettizzare su pallet EPAL blu..."
+                  value={newNotes}
+                  onChange={e => setNewNotes(e.target.value)}
                   className="w-full text-sm rounded-lg border border-slate-300 p-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>

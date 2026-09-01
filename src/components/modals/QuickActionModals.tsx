@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   ArrowDownToLine,
@@ -79,6 +79,15 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
   // Feedback message
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
+  // Modal Operator state (editable on-the-fly)
+  const [modalOperator, setModalOperator] = useState<string>(activeOperator || '');
+
+  useEffect(() => {
+    if (currentModal) {
+      setModalOperator(activeOperator || '');
+    }
+  }, [currentModal, activeOperator]);
+
   if (!currentModal) return null;
 
   // 1. Submit Reception
@@ -99,6 +108,7 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
       coperchiMancanti: Number(recCoperchiMancanti),
       zona: recZona || 'Magazzino',
       note: recNotes,
+      operatore: modalOperator.trim() || undefined,
     });
     if (res.success) {
       closeModal();
@@ -123,6 +133,7 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
       quantita: Number(useQty),
       lavorazioneCodice: 'Prelievo Operativo',
       note: useNotes,
+      operatore: modalOperator.trim() || undefined,
     });
     if (res.success) {
       closeModal();
@@ -144,6 +155,7 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
       causaDanno: damCause,
       descrizione: damDesc || `Danno ${damType} per ${damCause}`,
       pilaOrigine: damPila,
+      operatore: modalOperator.trim() || undefined,
     });
     if (res.success) {
       closeModal();
@@ -161,6 +173,7 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
       tipoElemento: recovType,
       quantita: Number(recovQty),
       note: recovNotes || `Recupero ${recovType}`,
+      operatore: modalOperator.trim() || undefined,
     });
     if (res.success) {
       closeModal();
@@ -176,6 +189,7 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
       basiRotte: Number(adjBasiRot),
       coperchiRotti: Number(adjCopRot),
       motivo: adjMotivo,
+      operatore: modalOperator.trim() || undefined,
     });
     closeModal();
   };
@@ -204,7 +218,22 @@ export const QuickActionModals: React.FC<ModalsProps> = ({ currentModal, closeMo
                 {currentModal === 'adjust' && 'Rettifica Inventariale Straordinaria'}
                 {currentModal === 'zero' && 'Azzeramento Dati Magazzino'}
               </h3>
-              <p className="text-xs text-slate-400">Operatore attivo: {activeOperator}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs text-slate-400">Operatore:</span>
+                <input
+                  type="text"
+                  list="quick-modal-operators-list"
+                  value={modalOperator}
+                  onChange={e => setModalOperator(e.target.value)}
+                  placeholder="Nome operatore..."
+                  className="text-xs bg-slate-800 text-slate-100 placeholder:text-slate-500 rounded px-2 py-0.5 border border-slate-700 focus:ring-1 focus:ring-blue-400 focus:outline-none w-44 font-medium"
+                />
+                <datalist id="quick-modal-operators-list">
+                  {settings.operatori.map(op => (
+                    <option key={op} value={op} />
+                  ))}
+                </datalist>
+              </div>
             </div>
           </div>
           <button

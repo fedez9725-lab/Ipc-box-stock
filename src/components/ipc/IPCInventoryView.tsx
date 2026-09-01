@@ -466,11 +466,17 @@ export const IPCInventoryView: React.FC = () => {
             </span>
             <input
               type="text"
+              list="ipc-operator-list"
               value={poolMemberOperator}
               onChange={e => setPoolMemberOperator(e.target.value)}
               className="bg-[#fef08a] text-slate-900 font-bold border border-amber-300 rounded px-3 py-1 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none min-w-[280px]"
               placeholder="Es. Poste Italiane - Hub / Centro Operativo"
             />
+            <datalist id="ipc-operator-list">
+              {settings.operatori.map(op => (
+                <option key={op} value={op} />
+              ))}
+            </datalist>
           </div>
 
           <div className="flex items-center gap-2 ml-auto">
