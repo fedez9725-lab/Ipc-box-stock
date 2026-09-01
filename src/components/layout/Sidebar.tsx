@@ -17,12 +17,14 @@ import {
   AlertOctagon,
   Monitor,
   MapPin,
+  Plane,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { getWorkstationHealth } from '../dispacciatori/WorkstationsView';
 
 export type TabType =
   | 'dashboard'
+  | 'routing-errors'
   | 'workstations'
   | 'stock'
   | 'ipc-sheet'
@@ -48,15 +50,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
   mobileOpen,
   setMobileOpen,
 }) => {
-  const { metrics, settings, orders, workOrders, embargoLDVs, workstations } = useStock();
+  const { metrics, settings, orders, workOrders, embargoLDVs, workstations, routingErrors } = useStock();
 
   const pendingOrdersCount = orders.filter(o => o.stato === 'IN_ATTESA' || o.stato === 'PARZIALE').length;
   const activeWorkOrdersCount = workOrders.filter(w => w.stato === 'IN_CORSO' || w.stato === 'PIANIFICATA').length;
   const blockedLDVsCount = embargoLDVs.filter(l => l.stato === 'BLOCCATO').length;
   const brokenWorkstationsCount = workstations.filter(ws => getWorkstationHealth(ws).status !== 'OPERATIVA').length;
+  const routingErrorsCount = routingErrors.length;
 
   const ipcNavItems = [
     { id: 'dashboard' as TabType, label: 'Dashboard', icon: Layers, badge: null },
+    {
+      id: 'routing-errors' as TabType,
+      label: 'Errori Instradamento LIN/MXP',
+      icon: Plane,
+      badge: routingErrorsCount > 0 ? `${routingErrorsCount} err.` : null,
+      badgeColor: routingErrorsCount > 0 ? 'bg-rose-600 text-white' : 'bg-slate-700 text-slate-300',
+    },
     {
       id: 'workstations' as TabType,
       label: 'Postazioni Dispacciatori',

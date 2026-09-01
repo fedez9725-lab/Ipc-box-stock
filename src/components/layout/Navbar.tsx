@@ -14,6 +14,7 @@ import {
   Layers,
   Monitor,
   MapPin,
+  Plane,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { TabType } from './Sidebar';
@@ -32,15 +33,18 @@ export const Navbar: React.FC<NavbarProps> = ({
   setMobileOpen,
   openModal,
 }) => {
-  const { metrics, settings, activeOperator, setActiveOperator, embargoLDVs, workstations } = useStock();
+  const { metrics, settings, activeOperator, setActiveOperator, embargoLDVs, workstations, routingErrors } = useStock();
 
   const blockedLDVsCount = embargoLDVs.filter(l => l.stato === 'BLOCCATO').length;
   const brokenWorkstationsCount = workstations.filter(ws => getWorkstationHealth(ws).status !== 'OPERATIVA').length;
+  const routingErrorsCount = routingErrors.length;
 
   const getTabTitle = (tab: TabType) => {
     switch (tab) {
       case 'dashboard':
         return 'Dashboard Panoramica IPC';
+      case 'routing-errors':
+        return 'Monitoraggio Errori Instradamento LIN ⇄ MXP';
       case 'workstations':
         return 'Mappa Postazioni Dispacciatori';
       case 'stock':
@@ -93,6 +97,28 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Side: Quick Action Buttons & Operator */}
         <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+          {/* DEDICATED TOP BUTTON: ERRORI INSTRADAMENTO LIN/MXP */}
+          <button
+            id="top-nav-routing-errors-btn"
+            onClick={() => setCurrentTab(currentTab === 'routing-errors' ? 'dashboard' : 'routing-errors')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer shadow-2xs ${
+              currentTab === 'routing-errors'
+                ? 'bg-blue-800 text-white shadow-sm ring-2 ring-blue-400/40'
+                : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200'
+            }`}
+            title="Monitoraggio Errori di Instradamento LIN <-> MXP"
+          >
+            <Plane className={`w-3.5 h-3.5 ${currentTab === 'routing-errors' ? 'text-white' : 'text-indigo-600'}`} />
+            <span>Errori LIN/MXP</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
+                currentTab === 'routing-errors' ? 'bg-white text-indigo-900' : 'bg-rose-600 text-white'
+              }`}
+            >
+              {routingErrorsCount}
+            </span>
+          </button>
+
           {/* DEDICATED TOP BUTTON: MAPPA POSTAZIONI DISPACCIATORI */}
           <button
             id="top-nav-workstations-btn"

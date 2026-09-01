@@ -4,6 +4,7 @@ import { Sidebar, TabType } from './components/layout/Sidebar';
 import { Navbar } from './components/layout/Navbar';
 import { DashboardView } from './components/dashboard/DashboardView';
 import { StockView } from './components/stock/StockView';
+import { RoutingErrorsView } from './components/routing/RoutingErrorsView';
 import { IPCInventoryView } from './components/ipc/IPCInventoryView';
 import { EmbargoView } from './components/embargo/EmbargoView';
 import { WorkstationsView } from './components/dispacciatori/WorkstationsView';
@@ -57,6 +58,7 @@ export default function App() {
             {currentTab === 'dashboard' && (
               <DashboardView setCurrentTab={setCurrentTab} openModal={openModal} />
             )}
+            {currentTab === 'routing-errors' && <RoutingErrorsView />}
             {currentTab === 'workstations' && <WorkstationsView />}
             {currentTab === 'stock' && <StockView openModal={openModal} />}
             {currentTab === 'ipc-sheet' && <IPCInventoryView />}

@@ -104,6 +104,77 @@ export const getWorkstationHealth = (ws: Workstation): {
   return { status, brokenCount, problemCount, totalOk, brokenList };
 };
 
+export type WorkstationColorKey = 'BLU' | 'GIALLO' | 'VERDE';
+
+export interface WorkstationColorPreset {
+  id: WorkstationColorKey;
+  label: string;
+  badgeBg: string;
+  badgeBorder: string;
+  badgeText: string;
+  cardBg: string;
+  cardBorder: string;
+  cardCodeText: string;
+  cardSubText: string;
+  cardHover: string;
+  dotColor: string;
+}
+
+export const WORKSTATION_COLOR_PRESETS: WorkstationColorPreset[] = [
+  {
+    id: 'BLU',
+    label: 'Blu',
+    badgeBg: 'bg-blue-100',
+    badgeBorder: 'border-blue-300',
+    badgeText: 'text-blue-950',
+    cardBg: 'bg-[#dbeafe]',
+    cardBorder: 'border-[#3b82f6]',
+    cardCodeText: 'text-[#1e293b]',
+    cardSubText: 'text-[#475569]',
+    cardHover: 'hover:border-[#2563eb]',
+    dotColor: 'bg-blue-500',
+  },
+  {
+    id: 'GIALLO',
+    label: 'Giallo',
+    badgeBg: 'bg-amber-100',
+    badgeBorder: 'border-amber-300',
+    badgeText: 'text-amber-950',
+    cardBg: 'bg-[#fef08a]',
+    cardBorder: 'border-[#eab308]',
+    cardCodeText: 'text-[#1e293b]',
+    cardSubText: 'text-[#475569]',
+    cardHover: 'hover:border-[#ca8a04]',
+    dotColor: 'bg-amber-500',
+  },
+  {
+    id: 'VERDE',
+    label: 'Verde',
+    badgeBg: 'bg-emerald-100',
+    badgeBorder: 'border-emerald-300',
+    badgeText: 'text-emerald-950',
+    cardBg: 'bg-[#dcfce7]',
+    cardBorder: 'border-[#22c55e]',
+    cardCodeText: 'text-[#1e293b]',
+    cardSubText: 'text-[#475569]',
+    cardHover: 'hover:border-[#16a34a]',
+    dotColor: 'bg-emerald-500',
+  },
+];
+
+export const getWorkstationColorTheme = (ws: {
+  coloreTema?: string;
+  assegnazione?: string;
+  codice?: string;
+}): WorkstationColorPreset => {
+  // Direct user choice with clean fallback to BLU:
+  if (ws.coloreTema) {
+    const found = WORKSTATION_COLOR_PRESETS.find(p => p.id === ws.coloreTema);
+    if (found) return found;
+  }
+  return WORKSTATION_COLOR_PRESETS[0]; // Default: BLU
+};
+
 export const WorkstationsView: React.FC = () => {
   const {
     workstations,
@@ -134,7 +205,7 @@ export const WorkstationsView: React.FC = () => {
   const [editingNotes, setEditingNotes] = useState<string>('');
   const [editingOperator, setEditingOperator] = useState<string>('');
   const [editingAssignment, setEditingAssignment] = useState<string>('');
-  const [editingColor, setEditingColor] = useState<'BLU' | 'GIALLO' | 'VERDE' | 'GRIGIO'>('BLU');
+  const [editingColor, setEditingColor] = useState<WorkstationColorKey>('BLU');
 
   // Modals
   const [showResetAllModal, setShowResetAllModal] = useState(false);
@@ -144,7 +215,7 @@ export const WorkstationsView: React.FC = () => {
   const [newWsOperator, setNewWsOperator] = useState('');
   const [newWsBanco, setNewWsBanco] = useState<'LATO_A' | 'LATO_B' | 'LATO_C' | 'LATO_D'>('LATO_A');
   const [newWsAssignment, setNewWsAssignment] = useState('Libera');
-  const [newWsColor, setNewWsColor] = useState<'BLU' | 'GIALLO' | 'VERDE' | 'GRIGIO'>('BLU');
+  const [newWsColor, setNewWsColor] = useState<WorkstationColorKey>('BLU');
 
   // Clear all operators function
   const handleClearAllOperators = () => {
@@ -175,7 +246,8 @@ export const WorkstationsView: React.FC = () => {
     setEditingNotes(ws.note || '');
     setEditingOperator(ws.operatore || '');
     setEditingAssignment(ws.assegnazione || 'Libera');
-    setEditingColor(ws.coloreTema || 'BLU');
+    const colorTheme = getWorkstationColorTheme(ws);
+    setEditingColor(ws.coloreTema || colorTheme.id);
   };
 
   // KPIs
@@ -799,18 +871,18 @@ export const WorkstationsView: React.FC = () => {
               </div>
 
               {/* Legend of colors */}
-              <div className="hidden lg:flex items-center gap-3 text-xs">
+              <div className="hidden lg:flex items-center gap-2 text-xs flex-wrap">
                 <span className="flex items-center gap-1.5 font-semibold text-blue-900 bg-blue-100 px-2 py-0.5 rounded-md border border-blue-300">
                   <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />
-                  Postazioni Libere
+                  Blu
                 </span>
                 <span className="flex items-center gap-1.5 font-semibold text-amber-950 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300">
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
-                  Svizzera / Austria / CRONOS
+                  Giallo
                 </span>
                 <span className="flex items-center gap-1.5 font-semibold text-emerald-950 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
-                  Germania / Francia
+                  Verde
                 </span>
               </div>
             </div>
@@ -1068,20 +1140,19 @@ export const WorkstationsView: React.FC = () => {
             {/* Drawer Header */}
             <div className="p-5 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between shrink-0 rounded-t-2xl">
               <div className="flex items-center gap-3">
-                <div
-                  className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center font-mono font-black text-base shadow-sm border-2 ${
-                    selectedWorkstation.coloreTema === 'GIALLO' || selectedWorkstation.assegnazione === 'Svizzera' || selectedWorkstation.assegnazione === 'Austria' || selectedWorkstation.assegnazione === 'CRONOS'
-                      ? 'bg-amber-200 text-amber-950 border-amber-400'
-                      : selectedWorkstation.coloreTema === 'VERDE' || selectedWorkstation.codice.startsWith('C') || selectedWorkstation.codice.startsWith('D')
-                      ? 'bg-emerald-200 text-emerald-950 border-emerald-500'
-                      : 'bg-blue-200 text-blue-950 border-blue-400'
-                  }`}
-                >
-                  <span className="leading-tight">{selectedWorkstation.codice}</span>
-                  <span className="text-[9px] font-sans font-bold -mt-0.5 truncate max-w-[42px]">
-                    {selectedWorkstation.assegnazione || 'Libera'}
-                  </span>
-                </div>
+                {(() => {
+                  const headerTheme = getWorkstationColorTheme(selectedWorkstation);
+                  return (
+                    <div
+                      className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center font-mono font-black text-base shadow-sm border-2 ${headerTheme.cardBg} ${headerTheme.cardBorder} ${headerTheme.cardCodeText}`}
+                    >
+                      <span className="leading-tight">{selectedWorkstation.codice}</span>
+                      <span className="text-[9px] font-sans font-bold -mt-0.5 truncate max-w-[42px]">
+                        {selectedWorkstation.assegnazione || 'Libera'}
+                      </span>
+                    </div>
+                  );
+                })()}
 
                 <div>
                   <div className="flex items-center gap-2">
@@ -1172,30 +1243,35 @@ export const WorkstationsView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Colore Grafico Scheda
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                      Colore Grafico Postazione (Seleziona per cambiare)
                     </label>
-                    <div className="flex items-center gap-2">
-                      {[
-                        { id: 'BLU', label: 'Blu', bg: 'bg-blue-200 border-blue-400 text-blue-900' },
-                        { id: 'GIALLO', label: 'Giallo', bg: 'bg-amber-200 border-amber-400 text-amber-950' },
-                        { id: 'VERDE', label: 'Verde', bg: 'bg-emerald-200 border-emerald-400 text-emerald-950' },
-                      ].map(c => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => {
-                            setEditingColor(c.id as any);
-                            updateWorkstation(selectedWorkstation.id, { coloreTema: c.id as any });
-                          }}
-                          className={`flex-1 py-1.5 text-xs font-bold rounded-lg border-2 transition-all cursor-pointer ${
-                            c.bg
-                          } ${editingColor === c.id ? 'ring-2 ring-blue-600 shadow-xs scale-105' : 'opacity-70 hover:opacity-100'}`}
-                        >
-                          {c.label}
-                        </button>
-                      ))}
+                    <div className="grid grid-cols-3 gap-2.5">
+                      {WORKSTATION_COLOR_PRESETS.map(c => {
+                        const isCurrent = (selectedWorkstation.coloreTema || getWorkstationColorTheme(selectedWorkstation).id) === c.id;
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              setEditingColor(c.id);
+                              updateWorkstation(selectedWorkstation.id, { coloreTema: c.id });
+                              showToast(`${selectedWorkstation.codice}: Colore modificato in ${c.label}`);
+                            }}
+                            className={`py-2.5 px-3 text-xs font-bold rounded-xl border-2 transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                              c.cardBg
+                            } ${c.cardBorder} ${
+                              isCurrent
+                                ? 'ring-2 ring-blue-600 shadow-md scale-102 font-black z-10'
+                                : 'opacity-70 hover:opacity-100 hover:scale-101'
+                            }`}
+                          >
+                            <span className={`w-3.5 h-3.5 rounded-full ${c.dotColor} border border-white shadow-2xs`} />
+                            <span className="text-xs leading-none text-slate-900">{c.label}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -1518,9 +1594,11 @@ export const WorkstationsView: React.FC = () => {
                     onChange={e => setNewWsColor(e.target.value as any)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white"
                   >
-                    <option value="BLU">Blu (Libera)</option>
-                    <option value="GIALLO">Giallo (Svizzera / Austria / CRONOS)</option>
-                    <option value="VERDE">Verde (Germania / Francia)</option>
+                    {WORKSTATION_COLOR_PRESETS.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1583,57 +1661,14 @@ interface PlanimetricCardProps {
 
 const PlanimetricCard: React.FC<PlanimetricCardProps> = ({ ws, isSelected, onClick, isVertical }) => {
   const health = getWorkstationHealth(ws);
-
-  // Exact color mapping from the user's graphic scheme:
-  // - Blue: A1, A3 (or when Libera on Lato A / explicit BLU)
-  // - Yellow: A2 (Svizzera), B1 (Austria), B2 (cronos), B3 (CRONOS)
-  // - Green: C1..C4, D1..D4 (or when Germania / Francia)
-  const isYellow =
-    ws.coloreTema === 'GIALLO' ||
-    ws.assegnazione === 'Svizzera' ||
-    ws.assegnazione === 'Austria' ||
-    ws.assegnazione === 'CRONOS' ||
-    ws.assegnazione === 'cronos' ||
-    ws.codice.startsWith('B') ||
-    ws.codice === 'A2';
-
-  const isGreen =
-    ws.coloreTema === 'VERDE' ||
-    ws.codice.startsWith('C') ||
-    ws.codice.startsWith('D') ||
-    ws.assegnazione === 'Germania' ||
-    ws.assegnazione === 'Francia';
-
-  const cardTheme = isYellow
-    ? {
-        bg: 'bg-[#fef08a]',
-        border: 'border-[#eab308]',
-        codeText: 'text-[#1e293b]',
-        subText: 'text-[#475569]',
-        hover: 'hover:border-[#ca8a04]',
-      }
-    : isGreen
-    ? {
-        bg: 'bg-[#dcfce7]',
-        border: 'border-[#22c55e]',
-        codeText: 'text-[#1e293b]',
-        subText: 'text-[#475569]',
-        hover: 'hover:border-[#16a34a]',
-      }
-    : {
-        bg: 'bg-[#dbeafe]',
-        border: 'border-[#3b82f6]',
-        codeText: 'text-[#1e293b]',
-        subText: 'text-[#475569]',
-        hover: 'hover:border-[#2563eb]',
-      };
+  const cardTheme = getWorkstationColorTheme(ws);
 
   return (
     <div
       onClick={onClick}
       className={`group relative rounded-xl border-[2.5px] p-3 transition-all duration-200 cursor-pointer select-none flex flex-col justify-between shadow-xs ${
-        cardTheme.bg
-      } ${cardTheme.border} ${cardTheme.hover} ${
+        cardTheme.cardBg
+      } ${cardTheme.cardBorder} ${cardTheme.cardHover} ${
         isSelected
           ? 'ring-4 ring-blue-600 scale-[1.03] shadow-lg z-20'
           : 'hover:scale-[1.02] hover:shadow-md'
@@ -1652,14 +1687,14 @@ const PlanimetricCard: React.FC<PlanimetricCardProps> = ({ ws, isSelected, onCli
 
       {/* Main Top Header: Postazione Code (e.g. A1, A2, B1, C1, D1) */}
       <div className="text-center pt-0.5">
-        <div className={`text-base sm:text-lg font-black tracking-tight font-sans ${cardTheme.codeText}`}>
+        <div className={`text-base sm:text-lg font-black tracking-tight font-sans ${cardTheme.cardCodeText}`}>
           {ws.codice}
         </div>
       </div>
 
       {/* Assignment / Destination Text (e.g. Libera, Svizzera, Austria, CRONOS, Germania, Francia) */}
       <div className="text-center pb-1">
-        <div className={`text-xs sm:text-sm font-extrabold capitalize ${cardTheme.subText}`}>
+        <div className={`text-xs sm:text-sm font-extrabold capitalize ${cardTheme.cardSubText}`}>
           {ws.assegnazione || 'Libera'}
         </div>
       </div>
@@ -1713,6 +1748,7 @@ interface WorkstationCardProps {
 
 const WorkstationCard: React.FC<WorkstationCardProps> = ({ ws, onClick, onQuickAuditOk }) => {
   const health = getWorkstationHealth(ws);
+  const colorTheme = getWorkstationColorTheme(ws);
 
   return (
     <div
@@ -1741,7 +1777,8 @@ const WorkstationCard: React.FC<WorkstationCardProps> = ({ ws, onClick, onQuickA
           <div>
             <div className="flex items-center gap-2">
               <h4 className="text-sm font-bold text-slate-900">{ws.nome}</h4>
-              <span className="px-2 py-0.2 text-[10px] font-bold rounded-md bg-slate-100 text-slate-800 border border-slate-200">
+              <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border flex items-center gap-1 ${colorTheme.cardBg} ${colorTheme.cardBorder} text-slate-900`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${colorTheme.dotColor}`} />
                 {ws.assegnazione || 'Libera'}
               </span>
             </div>

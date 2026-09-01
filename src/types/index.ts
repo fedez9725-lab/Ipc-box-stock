@@ -228,7 +228,7 @@ export interface Workstation {
   bancoNome: string;
   posizione: number; // 1, 2, 3...
   assegnazione: string; // "Libera", "Svizzera", "Austria", "CRONOS", "Germania", "Francia", ecc.
-  coloreTema?: 'BLU' | 'GIALLO' | 'VERDE' | 'GRIGIO';
+  coloreTema?: 'BLU' | 'GIALLO' | 'VERDE';
   hardware: WorkstationHardware;
   operatore?: string;
   note?: string;
@@ -246,4 +246,34 @@ export interface WorkstationLog {
   statoPrecedente: string;
   nuovoStato: string;
   note?: string;
+}
+
+export type AirportCode = 'LIN' | 'MXP';
+
+export interface RoutingError {
+  id: string;
+  data: string; // Formato YYYY-MM-DD
+  ora: string; // Formato HH:mm
+  linea: string; // Nome della linea
+  dispaccio: string; // Numero dispaccio
+  destinazioneCorretta: AirportCode; // LIN o MXP
+  destinazioneErrata: AirportCode; // LIN o MXP
+  numeroSpedizioni: number; // Numero colli/spedizioni coinvolti
+  numeroLdv?: string; // Eventuale numero LDV/spedizione/tracking
+  note?: string;
+  operatore?: string;
+  createdAt: string;
+}
+
+export interface RoutingErrorSummary {
+  totaleErrori: number;
+  totaleSpedizioni: number;
+  erroriLinToMxp: number; // Corretta LIN, Inviata MXP
+  spedizioniLinToMxp: number;
+  erroriMxpToLin: number; // Corretta MXP, Inviata LIN
+  spedizioniMxpToLin: number;
+  percentualeLinToMxp: number;
+  percentualeMxpToLin: number;
+  lineaPeggiorErrori: { linea: string; count: number; spedizioni: number } | null;
+  giornoPiccoErrori: { data: string; count: number; spedizioni: number } | null;
 }

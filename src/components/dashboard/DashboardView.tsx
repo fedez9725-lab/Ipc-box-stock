@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Zap,
   FileSpreadsheet,
+  Plane,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { TabType } from '../layout/Sidebar';
@@ -26,7 +27,13 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ setCurrentTab, openModal }) => {
-  const { stock, metrics, piles, orders, workOrders, movements, settings } = useStock();
+  const { stock, metrics, piles, orders, workOrders, movements, settings, routingErrors } = useStock();
+
+  // Routing errors aggregate
+  const totalRoutingErrors = routingErrors.length;
+  const totalShipmentsAffected = routingErrors.reduce((sum, e) => sum + e.numeroSpedizioni, 0);
+  const linToMxpCount = routingErrors.filter(e => e.destinazioneCorretta === 'LIN' && e.destinazioneErrata === 'MXP').length;
+  const mxpToLinCount = routingErrors.filter(e => e.destinazioneCorretta === 'MXP' && e.destinazioneErrata === 'LIN').length;
 
   // Orders aggregate
   const activeOrders = orders.filter(o => o.stato === 'IN_ATTESA' || o.stato === 'PARZIALE');
@@ -209,6 +216,40 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setCurrentTab, ope
                 Ripristina
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* DEDICATED ROUTING MONITORING BANNER (LIN <-> MXP) */}
+      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-2xl p-5 text-white border border-blue-800/60 shadow-md">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-blue-600/30 border border-blue-400/30 text-blue-300 flex items-center justify-center font-bold shrink-0">
+              <Plane className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-base text-white tracking-tight">
+                  Monitoraggio Errori Instradamento LIN ⇄ MXP
+                </h3>
+                <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-rose-500 text-white">
+                  {totalRoutingErrors} {totalRoutingErrors === 1 ? 'errore' : 'errori'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Tracciamento colli deviati ({totalShipmentsAffected} colli) &bull; LIN ➔ MXP: <strong>{linToMxpCount}</strong> &bull; MXP ➔ LIN: <strong>{mxpToLinCount}</strong>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setCurrentTab('routing-errors')}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+            >
+              <span>Gestione & Storico Errori</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </div>

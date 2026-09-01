@@ -16,6 +16,7 @@ import {
   WorkstationLog,
   WorkstationHardware,
   HardwareStatus,
+  RoutingError,
 } from '../types';
 import {
   initialComponentStock,
@@ -29,6 +30,7 @@ import {
   initialEmbargoLDVs,
   initialWorkstations,
   initialWorkstationLogs,
+  initialRoutingErrors,
   createDefaultHardware,
 } from '../data/initialData';
 
@@ -156,11 +158,29 @@ interface StockContextType {
     bancoId: 'LATO_A' | 'LATO_B' | 'LATO_C' | 'LATO_D' | string;
     bancoNome: string;
     assegnazione?: string;
-    coloreTema?: 'BLU' | 'GIALLO' | 'VERDE' | 'GRIGIO';
+    coloreTema?: 'BLU' | 'GIALLO' | 'VERDE';
     operatore?: string;
     note?: string;
   }) => Workstation;
   deleteWorkstation: (id: string) => void;
+  // Routing Errors (LIN <-> MXP) Management
+  routingErrors: RoutingError[];
+  addRoutingError: (data: {
+    data: string;
+    ora: string;
+    linea: string;
+    dispaccio: string;
+    destinazioneCorretta: 'LIN' | 'MXP';
+    destinazioneErrata: 'LIN' | 'MXP';
+    numeroSpedizioni: number;
+    numeroLdv?: string;
+    note?: string;
+    operatore?: string;
+  }) => RoutingError;
+  updateRoutingError: (id: string, updates: Partial<RoutingError>) => void;
+  deleteRoutingError: (id: string) => void;
+  duplicateRoutingError: (id: string) => RoutingError | null;
+  clearAllRoutingErrors: () => void;
   resetAllData: () => void;
   zeroAllData: () => void;
 }
@@ -293,11 +313,18 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (saved) {
       try {
         const parsed: Workstation[] = JSON.parse(saved);
-        return parsed.map(ws => ({
-          ...ws,
-          operatore: sanitizeName(ws.operatore),
-          ultimoOperatore: sanitizeName(ws.ultimoOperatore),
-        }));
+        return parsed.map(ws => {
+          let coloreTema = ws.coloreTema;
+          if (ws.assegnazione === 'CRONOS' && (coloreTema === 'GIALLO' || !coloreTema)) {
+            coloreTema = 'BLU';
+          }
+          return {
+            ...ws,
+            coloreTema,
+            operatore: sanitizeName(ws.operatore),
+            ultimoOperatore: sanitizeName(ws.ultimoOperatore),
+          };
+        });
       } catch (e) {
         console.error('Error parsing workstations:', e);
       }
@@ -319,6 +346,22 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
     return initialWorkstationLogs;
+  });
+
+  const [routingErrors, setRoutingErrors] = useState<RoutingError[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}routingErrors`);
+    if (saved) {
+      try {
+        const parsed: RoutingError[] = JSON.parse(saved);
+        return parsed.map(err => ({
+          ...err,
+          operatore: sanitizeName(err.operatore),
+        }));
+      } catch (e) {
+        console.error('Error parsing routingErrors:', e);
+      }
+    }
+    return initialRoutingErrors;
   });
 
   const [settings, setSettings] = useState<AppSettings>(() => {
@@ -429,6 +472,10 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem(`${STORAGE_PREFIX}workstationLogs`, JSON.stringify(workstationLogs));
   }, [workstationLogs]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_PREFIX}routingErrors`, JSON.stringify(routingErrors));
+  }, [routingErrors]);
 
   // Compute stock metrics
   const metrics = useMemo<ComputedStockMetrics>(() => {
@@ -1381,7 +1428,7 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     bancoId: 'LATO_A' | 'LATO_B' | 'LATO_C' | 'LATO_D' | string;
     bancoNome: string;
     assegnazione?: string;
-    coloreTema?: 'BLU' | 'GIALLO' | 'VERDE' | 'GRIGIO';
+    coloreTema?: 'BLU' | 'GIALLO' | 'VERDE';
     operatore?: string;
     note?: string;
   }): Workstation => {
@@ -1409,6 +1456,81 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setWorkstations(prev => prev.filter(ws => ws.id !== id));
   };
 
+  // Routing Errors Actions
+  const addRoutingError = (data: {
+    data: string;
+    ora: string;
+    linea: string;
+    dispaccio: string;
+    destinazioneCorretta: 'LIN' | 'MXP';
+    destinazioneErrata: 'LIN' | 'MXP';
+    numeroSpedizioni: number;
+    numeroLdv?: string;
+    note?: string;
+    operatore?: string;
+  }): RoutingError => {
+    const newError: RoutingError = {
+      id: `err-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      data: data.data,
+      ora: data.ora,
+      linea: data.linea.trim(),
+      dispaccio: data.dispaccio.trim().toUpperCase(),
+      destinazioneCorretta: data.destinazioneCorretta,
+      destinazioneErrata: data.destinazioneErrata,
+      numeroSpedizioni: Math.max(1, data.numeroSpedizioni || 1),
+      numeroLdv: data.numeroLdv?.trim() || undefined,
+      note: data.note?.trim() || undefined,
+      operatore: sanitizeName(data.operatore || activeOperator),
+      createdAt: new Date().toISOString(),
+    };
+
+    setRoutingErrors(prev => [newError, ...prev]);
+    return newError;
+  };
+
+  const updateRoutingError = (id: string, updates: Partial<RoutingError>) => {
+    setRoutingErrors(prev =>
+      prev.map(err => {
+        if (err.id !== id) return err;
+        return {
+          ...err,
+          ...updates,
+          linea: updates.linea !== undefined ? updates.linea.trim() : err.linea,
+          dispaccio: updates.dispaccio !== undefined ? updates.dispaccio.trim().toUpperCase() : err.dispaccio,
+          numeroSpedizioni: updates.numeroSpedizioni !== undefined ? Math.max(1, updates.numeroSpedizioni) : err.numeroSpedizioni,
+          operatore: updates.operatore !== undefined ? sanitizeName(updates.operatore) : err.operatore,
+        };
+      })
+    );
+  };
+
+  const deleteRoutingError = (id: string) => {
+    setRoutingErrors(prev => prev.filter(err => err.id !== id));
+  };
+
+  const duplicateRoutingError = (id: string): RoutingError | null => {
+    const target = routingErrors.find(e => e.id === id);
+    if (!target) return null;
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const currentDate = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+    
+    const duplicated: RoutingError = {
+      ...target,
+      id: `err-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      data: currentDate,
+      ora: currentTime,
+      createdAt: now.toISOString(),
+      note: target.note ? `[Duplicato] ${target.note}` : undefined,
+    };
+    setRoutingErrors(prev => [duplicated, ...prev]);
+    return duplicated;
+  };
+
+  const clearAllRoutingErrors = () => {
+    setRoutingErrors([]);
+  };
+
   const resetAllData = () => {
     setStock(initialComponentStock);
     setPiles(initialPiles);
@@ -1421,6 +1543,7 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setEmbargoLDVs(initialEmbargoLDVs);
     setWorkstations(initialWorkstations);
     setWorkstationLogs(initialWorkstationLogs);
+    setRoutingErrors(initialRoutingErrors);
   };
 
   const zeroAllData = () => {
@@ -1440,6 +1563,7 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setDamageReports([]);
     setIpcSheets([]);
     setEmbargoLDVs([]);
+    setRoutingErrors([]);
     addMovement(
       'RETTIFICA',
       0,
@@ -1503,6 +1627,12 @@ export const StockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         resetAllWorkstationsToOk,
         addWorkstation,
         deleteWorkstation,
+        routingErrors,
+        addRoutingError,
+        updateRoutingError,
+        deleteRoutingError,
+        duplicateRoutingError,
+        clearAllRoutingErrors,
         resetAllData,
         zeroAllData,
       }}

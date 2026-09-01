@@ -1,6 +1,6 @@
 {
   "name": "Gestionale IPC BOX",
-  "description": "Applicazione per la gestione operativa, stock, pile da 7, ordini, lavorazioni, danni e storico movimenti degli IPC BOX per la logistica internazionale.",
+  "description": "Applicazione per la gestione operativa, stock IPC BOX, postazioni dispacciatori, registro LDV embargo e monitoraggio errori di instradamento spedizioni LIN/MXP.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
